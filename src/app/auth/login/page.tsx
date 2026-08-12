@@ -50,6 +50,10 @@ export default function LoginPage() {
       return;
     }
 
+    const { data } = await supabase.auth.getSession()
+
+    console.log(data.session?.access_token)
+
     router.replace("/dashboard");
   }
 

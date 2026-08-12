@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createApiClient } from "@/lib/supabase/api";
-import { CreateProfileInput } from "@/lib/validations/profile";
 
-// GET api/profiles
+import { CreateCategorySchema } from "@/lib/validations/category";
+
+// GET /api/categories
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("Authorization")
 
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
   }
 
   const token = authHeader.substring(7)
-  const supabase = createApiClient(token);
+  const supabase = createApiClient(token)
 
-  const { data, error } = await supabase.from("profiles").select("*");
+  const { data, error } = await supabase.from("categories").select("*")
 
   // Check for error
   if (error) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "No user profiles found.",
+        message: "No categories found.",
         data: [],
       },
       { status: 200 }
@@ -48,56 +49,69 @@ export async function GET(request: NextRequest) {
   }, { status: 200 })
 }
 
-// POST /api/profiles
+// POST /api/categories
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("Authorization");
+  const authHeader = request.headers.get("Authorization")
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized",
-      },
-      { status: 401 }
-    );
+    return NextResponse.json({
+      success: false,
+      error: "Unauthorized"
+    }, { status: 401 })
   }
 
-  const token = authHeader.substring(7);
-  const supabase = createApiClient(token);
+  const token = authHeader.substring(7)
+  const supabase = createApiClient(token)
 
-  const body: CreateProfileInput = await request.json();
+  // Parse and validate request body
+  const body = await request.json();
 
-  // Check if username already exists
-  const { data: userExists, error: userExistsError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_name", body.user_name)
-    .maybeSingle();
+  const result = CreateCategorySchema.safeParse(body);
 
-  if (userExistsError) {
+  if (!result.success) {
     return NextResponse.json(
       {
         success: false,
-        error: userExistsError.message,
-      },
-      { status: 500 }
-    );
-  }
-
-  if (userExists) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Username already exists.",
+        error: "Validation failed",
+        details: result.error.flatten(),
       },
       { status: 400 }
     );
   }
 
-  // Create profile
+  const categories = result.data;
+
+  // Check if the category already exists
+  const { data: existingItem, error: existingItemError } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("name", categories.name)
+    .maybeSingle();
+
+  if (existingItemError) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: existingItemError.message
+      },
+      { status: 500 }
+    );
+  }
+
+  if (existingItem) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Category already exists"
+      },
+      { status: 409 }
+    );
+  }
+
+  // Create the new category
   const { data, error } = await supabase
-    .from("profiles")
-    .insert([body])
+    .from("categories")
+    .insert([categories])
     .select()
     .single();
 
@@ -105,16 +119,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: error.message
       },
       { status: 500 }
     );
   }
 
+  // Return the new category
   return NextResponse.json(
     {
       success: true,
-      message: "Profile created successfully!",
+      message: "Category created successfully!",
       data,
     },
     { status: 201 }

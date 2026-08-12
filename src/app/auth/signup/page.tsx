@@ -54,10 +54,7 @@ export default function SignupPage() {
 
         return;
       }
-
-      // Supabase returns a user with empty identities
-      // when the email is already registered
-      // (with email confirmations enabled)
+      
       if (
         data.user &&
         data.user.identities &&
@@ -181,4 +178,4 @@ export default function SignupPage() {
       </button>
     </div>
   );
-}
+}

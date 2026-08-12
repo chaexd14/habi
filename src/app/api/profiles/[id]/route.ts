@@ -82,9 +82,53 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     )
   }
 
+  if (!data) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Profile not found"
+      },
+      { status: 404 }
+    )
+  }
+
+
   return NextResponse.json({
     success: true,
     message: "Profile updated successfully",
     data,
+  }, { status: 200 })
+}
+
+// DELETE api/profiles/[id]
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
+  const authHeader = request.headers.get("Authorization")
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json({
+      success: false,
+      error: "Unauthorized"
+    }, { status: 401 })
+  }
+
+  const token = authHeader.substring(7)
+  const supabase = createApiClient(token);
+
+  const { id } = await params
+
+  const { error } = await supabase.from("profiles").delete().eq("id", id).single();
+
+  if (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message
+      }, { status: 500 }
+    )
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Profile deleted successfully",
   }, { status: 200 })
 }
