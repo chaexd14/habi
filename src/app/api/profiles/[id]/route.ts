@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
+import { fetchUserProfileCached } from "@/lib/api/profile-server";
 
 import { UpdateProfileInput } from "@/lib/validations/profile";
 
@@ -8,34 +10,91 @@ type RouteContext = {
   params: Promise<{
     id: string;
   }>;
-}
+};
 
 // GET api/profiles/[id]
 export async function GET(request: NextRequest, { params }: RouteContext) {
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
   }
 
-  const token = authHeader.substring(7)
+  const token = authHeader.substring(7);
+  const { id } = await params;
+
+  try {
+    const profiles = await fetchUserProfileCached(id, token);
+
+    if (!profiles || profiles.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Profile not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: profiles[0],
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message || "Failed to fetch cached user profile",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH api/profiles/[id]
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const authHeader = request.headers.get("Authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+  const token = authHeader.substring(7);
 
   const supabase = createApiClient(token);
 
-  const { id } = await params
+  const { id } = await params;
+  const body: UpdateProfileInput = await request.json();
 
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(body)
+    .eq("id", id)
+    .select("*")
+    .single();
 
   if (error) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message
-      }, { status: 500 }
-    )
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
 
   if (!data) {
@@ -48,87 +107,64 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  return NextResponse.json({
-    success: true,
-    data,
-  }, { status: 200 })
-}
+  // Revalidate profile cache tags
+  revalidateTag(`user-profile-${id}`, "default");
+  revalidateTag("user-profiles", "default");
 
-// PATCH api/profiles/[id]
-export async function PATCH(request: NextRequest, { params }: RouteContext) {
-  const authHeader = request.headers.get("Authorization")
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
-  }
-  const token = authHeader.substring(7)
-
-  const supabase = createApiClient(token);
-
-  const { id } = await params
-  const body: UpdateProfileInput = await request.json()
-
-  const { data, error } = await supabase.from("profiles").update(body).eq("id", id).select("*").single();
-
-  if (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message
-      }, { status: 500 }
-    )
-  }
-
-  if (!data) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Profile not found"
-      },
-      { status: 404 }
-    )
-  }
-
-
-  return NextResponse.json({
-    success: true,
-    message: "Profile updated successfully",
-    data,
-  }, { status: 200 })
+  return NextResponse.json(
+    {
+      success: true,
+      message: "Profile updated successfully",
+      data,
+    },
+    { status: 200 }
+  );
 }
 
 // DELETE api/profiles/[id]
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
   }
 
-  const token = authHeader.substring(7)
+  const token = authHeader.substring(7);
   const supabase = createApiClient(token);
 
-  const { id } = await params
+  const { id } = await params;
 
-  const { error } = await supabase.from("profiles").delete().eq("id", id).single();
+  const { error } = await supabase
+    .from("profiles")
+    .delete()
+    .eq("id", id)
+    .single();
 
   if (error) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message
-      }, { status: 500 }
-    )
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({
-    success: true,
-    message: "Profile deleted successfully",
-  }, { status: 200 })
+  // Revalidate profile cache tags
+  revalidateTag(`user-profile-${id}`, "default");
+  revalidateTag("user-profiles", "default");
+
+  return NextResponse.json(
+    {
+      success: true,
+      message: "Profile deleted successfully",
+    },
+    { status: 200 }
+  );
 }

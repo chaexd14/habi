@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateCalendarItemSchema } from "@/lib/validations/calendar-item";
@@ -139,6 +139,8 @@ export async function POST(request: NextRequest) {
       error: error.message
     }, { status: 500 })
   }
+
+  revalidateTag("calendar-items", "default");
 
   return NextResponse.json({
     success: true,

@@ -12,8 +12,8 @@ export const CreateScheduleItemSchema = z.object({
     )
     .min(1, "At least one day is required"),
 
-  start_time: z.iso.time(),
-  end_time: z.iso.time(),
+  start_time: z.string().min(1, "Start time is required"),
+  end_time: z.string().min(1, "End time is required"),
 });
 
 export const UpdateScheduleItemSchema = CreateScheduleItemSchema.partial();

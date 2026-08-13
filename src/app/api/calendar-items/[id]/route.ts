@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { UpdateCalendarItemSchema } from "@/lib/validations/calendar-item";
@@ -104,6 +104,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }, { status: 404 })
   }
 
+  revalidateTag("schedules", "default");
+
   return NextResponse.json({
     success: true,
     message: "Calendar item updated successfully!",
@@ -147,6 +149,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       error: "Calendar item not found"
     }, { status: 404 })
   }
+
+  revalidateTag("schedules", "default");
 
   return NextResponse.json({
     success: true,

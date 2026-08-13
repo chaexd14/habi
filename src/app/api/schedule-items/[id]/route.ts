@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { UpdateScheduleItemSchema } from "@/lib/validations/schedule-item";
@@ -128,6 +128,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
+  revalidateTag("schedule-items", "default");
+
   return NextResponse.json(
     {
       success: true,
@@ -183,6 +185,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       { status: 404 }
     );
   }
+
+  revalidateTag("schedule-items", "default")
 
   return NextResponse.json(
     {

@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateScheduleSchema } from "@/lib/validations/schedule";
@@ -154,6 +154,8 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  revalidateTag("schedules", "default");
 
   // Return the new schedule
   return NextResponse.json(

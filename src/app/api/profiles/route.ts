@@ -1,51 +1,77 @@
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
+import { fetchUserProfileCached } from "@/lib/api/profile-server";
 import { CreateProfileInput } from "@/lib/validations/profile";
 
 // GET api/profiles
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
-  }
-
-  const token = authHeader.substring(7)
-  const supabase = createApiClient(token);
-
-  const { data, error } = await supabase.from("profiles").select("*");
-
-  // Check for error
-  if (error) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message
-      }, { status: 500 }
-    )
-  }
-
-  // Check if no data is found
-  if (!data || data.length === 0) {
-    return NextResponse.json(
-      {
-        success: true,
-        message: "No user profiles found.",
-        data: [],
+        error: "Unauthorized",
       },
-      { status: 200 }
+      { status: 401 }
     );
   }
 
-  // Return the data
-  return NextResponse.json({
-    success: true,
-    data,
-  }, { status: 200 })
+  const token = authHeader.substring(7);
+  const supabase = createApiClient(token);
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Invalid token",
+      },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const data = await fetchUserProfileCached(user.id, token);
+
+    if (!data || data.length === 0) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: "No user profiles found.",
+          data: [],
+        },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        },
+      }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message || "Failed to fetch cached user profile",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 // POST /api/profiles
@@ -64,6 +90,21 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader.substring(7);
   const supabase = createApiClient(token);
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Invalid token or user not authenticated.",
+      },
+      { status: 401 }
+    );
+  }
 
   const body: CreateProfileInput = await request.json();
 
@@ -94,10 +135,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Create profile
+  // Create profile with user.id to satisfy RLS policy (auth.uid() = id)
+  const profilePayload = {
+    id: user.id,
+    ...body,
+  };
+
   const { data, error } = await supabase
     .from("profiles")
-    .insert([body])
+    .insert([profilePayload])
     .select()
     .single();
 
@@ -110,6 +156,12 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  // Revalidate profile cache tags
+  if (data?.id) {
+    revalidateTag(`user-profile-${data.id}`, "default");
+  }
+  revalidateTag("user-profiles", "default");
 
   return NextResponse.json(
     {

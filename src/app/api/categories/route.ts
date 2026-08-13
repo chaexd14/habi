@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateCategorySchema } from "@/lib/validations/category";
@@ -124,6 +124,8 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  revalidateTag("categories", "default");
 
   // Return the new category
   return NextResponse.json(
