@@ -80,6 +80,20 @@ export async function getScheduleItems(forceRefresh = false): Promise<ScheduleIt
   return scheduleItemPromise;
 }
 
+// Re-export ScheduleConflict type from the service for consumer convenience
+export type { ScheduleConflict } from "@/lib/services/schedule-conflict";
+
+import type { ScheduleConflict } from "@/lib/services/schedule-conflict";
+
+export class ScheduleConflictError extends Error {
+  conflicts: ScheduleConflict[];
+  constructor(message: string, conflicts: ScheduleConflict[]) {
+    super(message);
+    this.name = "ScheduleConflictError";
+    this.conflicts = conflicts;
+  }
+}
+
 export async function createScheduleItemApi(
   input: CreateScheduleItemInput
 ): Promise<ScheduleItemResponse> {
@@ -104,6 +118,14 @@ export async function createScheduleItemApi(
   const resJson = await response.json();
 
   if (!response.ok || !resJson.success) {
+    // Surface conflict data as a typed error
+    if (response.status === 409 && resJson.conflicts) {
+      throw new ScheduleConflictError(
+        resJson.error || "Schedule conflict detected",
+        resJson.conflicts as ScheduleConflict[]
+      );
+    }
+
     let errorMsg = resJson.error || "Failed to create schedule item.";
     if (resJson.details?.fieldErrors) {
       const fieldMsgs = Object.entries(resJson.details.fieldErrors)

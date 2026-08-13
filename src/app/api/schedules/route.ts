@@ -4,6 +4,8 @@ import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateScheduleSchema } from "@/lib/validations/schedule";
 
+import { fetchSchedulesCached } from "@/lib/api/schedule-server";
+
 // GET /api/schedules
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
@@ -40,28 +42,25 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { data, error } = await supabase
-    .from("schedules")
-    .select("*")
-    .eq("user_id", user.id);
+  try {
+    const schedules = await fetchSchedulesCached(user.id, token);
 
-  if (error) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: schedules,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: error?.message || "Failed to fetch schedules.",
       },
       { status: 500 }
     );
   }
-
-  return NextResponse.json(
-    {
-      success: true,
-      data: data ?? [],
-    },
-    { status: 200 }
-  );
 }
 
 // POST api/schedules

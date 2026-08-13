@@ -69,7 +69,7 @@ export function CalendarToolbar({
           {sourceFilter === "schedule" ? (
             <>
               <Repeat className="size-5 text-blue-500" />
-              Weekly Schedule
+              {schedules.find((s) => s.id === selectedScheduleFilter)?.title || "Weekly Schedule"}
             </>
           ) : (
             <>

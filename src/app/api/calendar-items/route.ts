@@ -4,19 +4,21 @@ import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateCalendarItemSchema } from "@/lib/validations/calendar-item";
 
+import { fetchCalendarItemsCached } from "@/lib/api/calendar-item-server";
+
 // GET /api/calendar-items
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return NextResponse.json({
       success: false,
       error: "Unauthorized"
-    }, { status: 401 })
+    }, { status: 401 });
   }
 
-  const token = authHeader.substring(7)
-  const supabase = createApiClient(token)
+  const token = authHeader.substring(7);
+  const supabase = createApiClient(token);
 
   // Authenticate user
   const {
@@ -37,31 +39,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { data: calendarItems, error } = await supabase
-    .from("calendar_items")
-    .select("*");
+  try {
+    const calendarItems = await fetchCalendarItemsCached(user.id, token);
 
-  if (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message
-    }, { status: 500 })
-  }
-
-  // Check if no calendar items are retrieved
-  if (!calendarItems || calendarItems.length === 0) {
     return NextResponse.json({
       success: true,
-      message: "No calendar events found",
-      data: []
-    }, { status: 200 })
+      data: calendarItems,
+    }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: error?.message || "Failed to fetch calendar items"
+    }, { status: 500 });
   }
-
-  // Return the calendar items
-  return NextResponse.json({
-    success: true,
-    data: calendarItems,
-  }, { status: 200 })
 }
 
 // POST /api/calendar-items

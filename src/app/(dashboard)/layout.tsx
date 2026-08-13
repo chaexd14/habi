@@ -1,4 +1,5 @@
 import { ProfileProvider } from "@/providers/profile-provider";
+import { NotificationProvider } from "@/providers/notification-provider";
 
 export default function DashboardLayout({
   children,
@@ -7,7 +8,10 @@ export default function DashboardLayout({
 }) {
   return (
     <ProfileProvider>
-      {children}
+      <NotificationProvider>
+        {children}
+      </NotificationProvider>
     </ProfileProvider>
   );
 }
+

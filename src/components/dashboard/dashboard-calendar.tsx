@@ -19,6 +19,8 @@ import { CalendarMonthView } from "./calendar-month-view";
 import { CalendarWeekView } from "./calendar-week-view";
 import { CalendarDayView } from "./calendar-day-view";
 import { AddEventModal } from "@/components/forms/add-event-modal";
+import { AddScheduleModal } from "@/components/forms/add-schedule-modal";
+import { AddScheduleItemModal } from "@/components/forms/add-schedule-item-modal";
 import { EditEventModal, RenderEvent } from "@/components/forms/edit-event-modal";
 
 const DAY_MAP: Record<number, DayOfWeek> = {
@@ -65,18 +67,30 @@ function format12h(hourFloatOrStr?: number | string | null): string {
       return hourFloatOrStr;
     }
   } else {
-    h = Math.floor(hourFloatOrStr) % 24;
+    h = Math.floor(hourFloatOrStr);
     m = Math.round((hourFloatOrStr - Math.floor(hourFloatOrStr)) * 60);
   }
 
   if (isNaN(h)) return "";
   if (isNaN(m)) m = 0;
 
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const displayH = h % 24;
+  const period = displayH >= 12 ? "PM" : "AM";
+  const h12 = displayH % 12 === 0 ? 12 : displayH % 12;
   const padM = m.toString().padStart(2, "0");
 
   return `${h12}:${padM} ${period}`;
+}
+
+function parseEndTimeToHours(endTimeStr?: string | null, startTimeStr?: string | null): number | null {
+  if (!endTimeStr) return null;
+  let endH = parseTimeToHours(endTimeStr);
+  if (endH === null) return null;
+  const startH = parseTimeToHours(startTimeStr);
+  if (endH === 0 || (startH !== null && endH < startH)) {
+    endH += 24;
+  }
+  return endH;
 }
 
 function getDynamicTimelineRange(events: RenderEvent[]): { minHour: number; maxHour: number } {
@@ -89,7 +103,7 @@ function getDynamicTimelineRange(events: RenderEvent[]): { minHour: number; maxH
 
     events.forEach((ev) => {
       const s = parseTimeToHours(ev.startTime);
-      const e = parseTimeToHours(ev.endTime);
+      const e = parseEndTimeToHours(ev.endTime, ev.startTime);
 
       if (s !== null) {
         earliest = Math.min(earliest, s);
@@ -104,7 +118,7 @@ function getDynamicTimelineRange(events: RenderEvent[]): { minHour: number; maxH
     if (earliest < 24) {
       minH = Math.max(0, Math.floor(earliest));
       const targetMax = Math.max(minH + 8, Math.ceil(latest));
-      maxH = Math.min(24, targetMax);
+      maxH = Math.min(30, targetMax); // Allow timeline to expand up to 30 (6:00 AM next day) for overnight shifts
     }
   }
 
@@ -190,6 +204,7 @@ export function DashboardCalendar() {
 
   // Add & Edit Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RenderEvent | null>(null);
 
@@ -519,6 +534,13 @@ export function DashboardCalendar() {
         onCalendarItemCreated={(newItem) => setCalendarItems((prev) => [...prev, newItem])}
         onScheduleCreated={(newSched) => setSchedules((prev) => [...prev, newSched])}
         onScheduleItemCreated={(newItem) => setScheduleItems((prev) => [...prev, newItem])}
+        onOpenCreateSchedule={() => setIsAddScheduleOpen(true)}
+      />
+
+      <AddScheduleModal
+        isOpen={isAddScheduleOpen}
+        onClose={() => setIsAddScheduleOpen(false)}
+        onScheduleCreated={(newSched) => setSchedules((prev) => [...prev, newSched])}
       />
 
       <EditEventModal

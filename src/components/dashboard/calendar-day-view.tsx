@@ -4,6 +4,7 @@ import * as React from "react";
 import { Category } from "@/types/category";
 import { RenderEvent } from "@/components/forms/edit-event-modal";
 import { Clock, Repeat } from "lucide-react";
+import { computeOverlappingLayout, parseEndTimeToHours } from "@/lib/utils/calendar-layout";
 
 export interface CalendarDayViewProps {
   currentDate: Date;
@@ -28,6 +29,13 @@ export function CalendarDayView({
   format12h,
   onItemClick,
 }: CalendarDayViewProps) {
+  const dayEvents = getRenderEventsForDate(currentDate);
+  const positionedEvents = computeOverlappingLayout(
+    dayEvents,
+    parseTimeToHours,
+    dynamicHourRange.minHour
+  );
+
   return (
     <div className="flex flex-col h-full min-w-[500px]">
       <div className="p-3 border-b border-border bg-muted/20 flex items-center justify-between">
@@ -68,11 +76,11 @@ export function CalendarDayView({
             ))}
 
             {/* Resized & Positioned Day Events */}
-            {getRenderEventsForDate(currentDate).map((ev) => {
+            {positionedEvents.map(({ event: ev, leftPercent, widthPercent }) => {
               const cat = ev.categoryId ? categoryMap.get(ev.categoryId) : null;
 
               const startH = parseTimeToHours(ev.startTime) ?? dynamicHourRange.minHour;
-              const endH = parseTimeToHours(ev.endTime) ?? (startH + 1);
+              const endH = parseEndTimeToHours(ev.endTime, ev.startTime, parseTimeToHours) ?? (startH + 1);
 
               const durationHours = Math.max(0.5, endH - startH);
               const topPx = (startH - dynamicHourRange.minHour) * HOUR_HEIGHT;
@@ -84,42 +92,53 @@ export function CalendarDayView({
                 <div
                   key={ev.id}
                   onClick={(e) => onItemClick(ev, e)}
-                  className="absolute inset-x-3 p-3 rounded-xl border shadow-sm transition-all hover:shadow-md hover:z-20 z-10 flex flex-col justify-between cursor-pointer"
+                  className="absolute p-3 rounded-xl border shadow-sm transition-all hover:shadow-md hover:z-20 z-10 flex flex-col justify-between cursor-pointer overflow-hidden"
                   style={{
                     top: `${topPx + 2}px`,
                     height: `${heightPx}px`,
-                    backgroundColor: cat?.color ? `${cat.color}25` : "#3b82f625",
+                    left: `calc(${leftPercent}% + 4px)`,
+                    width: `calc(${widthPercent}% - 8px)`,
+                    backgroundColor: cat?.color ? `${cat.color}28` : "#3b82f628",
                     color: cat?.color || "#3b82f6",
-                    borderColor: cat?.color || "#3b82f6",
+                    borderColor: cat?.color ? `${cat.color}70` : "#3b82f670",
                   }}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-sm flex items-center gap-1.5">
-                        {isSchedule && <Repeat className="size-3.5 text-primary" />}
-                        {ev.title}
+                      <span
+                        className="font-bold text-sm flex items-center gap-1.5 truncate"
+                        style={{ color: cat?.color || "inherit" }}
+                      >
+                        {isSchedule && <Repeat className="size-3.5 shrink-0" style={{ color: cat?.color || "currentColor" }} />}
+                        <span className="truncate">{ev.title}</span>
                       </span>
-                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-background/80 shadow-2xs">
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-background/80 shadow-2xs shrink-0">
                         {format12h(ev.startTime || startH)} - {format12h(ev.endTime || endH)}
                       </span>
                     </div>
+
                     {isSchedule && ev.scheduleTitle && (
-                      <p className="text-xs opacity-75 font-medium mt-1">{ev.scheduleTitle}</p>
+                      <div className="mt-1 flex items-center">
+                        <span className="truncate text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          {ev.scheduleTitle}
+                        </span>
+                      </div>
                     )}
+
                     {ev.description && (
-                      <p className="text-xs opacity-80 font-normal mt-1 leading-relaxed">
+                      <p className="text-xs opacity-80 font-normal mt-1 leading-relaxed truncate">
                         {ev.description}
                       </p>
                     )}
                   </div>
 
                   {cat && (
-                    <div className="flex items-center gap-1.5 mt-2">
+                    <div className="flex items-center gap-1.5 mt-2 shrink-0">
                       <span
-                        className="size-2 rounded-full"
+                        className="size-2 rounded-full shrink-0"
                         style={{ backgroundColor: cat.color || "#3b82f6" }}
                       />
-                      <span className="text-xs font-semibold opacity-90">{cat.name}</span>
+                      <span className="text-xs font-semibold opacity-90 truncate">{cat.name}</span>
                     </div>
                   )}
                 </div>

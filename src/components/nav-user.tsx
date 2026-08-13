@@ -27,6 +27,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { Button } from "@/components/ui/button"
 
+import createClient from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+
 export function NavUserSkeleton() {
   return (
     <SidebarMenu>
@@ -45,6 +48,22 @@ export function NavUserSkeleton() {
 
 export function NavUser({ userProfile }: { userProfile: UserProfile }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      if (typeof window !== "undefined") {
+        sessionStorage.clear()
+      }
+      router.push("/auth/login")
+      router.refresh()
+    } catch (err) {
+      console.error("Failed to sign out:", err)
+    }
+  }
+
   return (
     <div className="flex">
       <SidebarMenu>
@@ -83,9 +102,8 @@ export function NavUser({ userProfile }: { userProfile: UserProfile }) {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="h-11">
-                <LogOutIcon
-                />
+              <DropdownMenuItem onClick={handleLogout} className="h-11 cursor-pointer">
+                <LogOutIcon />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

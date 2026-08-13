@@ -1,18 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarItem } from "@/types/calendar-item";
 import { Schedule, ScheduleItem, DayOfWeek } from "@/types/schedule";
 import { Category } from "@/types/category";
 
 import { createCalendarItemApi } from "@/lib/api/calendar-item";
-import { createScheduleApi } from "@/lib/api/schedule";
-import { createScheduleItemApi } from "@/lib/api/schedule-item";
+import { createScheduleItemApi, ScheduleConflictError, ScheduleConflict } from "@/lib/api/schedule-item";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarIcon, Repeat, X, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock, Plus } from "lucide-react";
 
 export type FormType = "calendar_item" | "schedule_item";
 
@@ -33,8 +32,9 @@ export interface AddEventModalProps {
   categories: Category[];
   initialDayIso: string;
   onCalendarItemCreated: (item: CalendarItem) => void;
-  onScheduleCreated: (schedule: Schedule) => void;
+  onScheduleCreated?: (schedule: Schedule) => void;
   onScheduleItemCreated: (item: ScheduleItem) => void;
+  onOpenCreateSchedule?: () => void;
 }
 
 export function AddEventModal({
@@ -46,6 +46,7 @@ export function AddEventModal({
   onCalendarItemCreated,
   onScheduleCreated,
   onScheduleItemCreated,
+  onOpenCreateSchedule,
 }: AddEventModalProps) {
   const [formType, setFormType] = useState<FormType>("calendar_item");
 
@@ -58,10 +59,7 @@ export function AddEventModal({
   const [eventCategoryId, setEventCategoryId] = useState<string>("");
 
   // Schedule Item Form
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string>(
-    schedules.length > 0 ? schedules[0].id : "NEW"
-  );
-  const [newScheduleTitle, setNewScheduleTitle] = useState("");
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [schedItemTitle, setSchedItemTitle] = useState("");
   const [schedSelectedDays, setSchedSelectedDays] = useState<DayOfWeek[]>(["MON", "WED", "FRI"]);
   const [schedStartTime, setSchedStartTime] = useState("09:00");
@@ -70,6 +68,17 @@ export function AddEventModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [conflictWarnings, setConflictWarnings] = useState<ScheduleConflict[]>([]);
+
+  useEffect(() => {
+    if (schedules.length > 0) {
+      if (!selectedScheduleId || !schedules.some((s) => s.id === selectedScheduleId)) {
+        setSelectedScheduleId(schedules[0].id);
+      }
+    } else {
+      setSelectedScheduleId("");
+    }
+  }, [schedules, isOpen]);
 
   if (!isOpen) return null;
 
@@ -82,6 +91,7 @@ export function AddEventModal({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setConflictWarnings([]);
     setIsSubmitting(true);
 
     try {
@@ -111,6 +121,12 @@ export function AddEventModal({
           setFormError(res.error || "Failed to create calendar item.");
         }
       } else {
+        if (!selectedScheduleId) {
+          setFormError("Please select a schedule or create one first.");
+          setIsSubmitting(false);
+          return;
+        }
+
         if (!schedItemTitle.trim()) {
           setFormError("Title is required.");
           setIsSubmitting(false);
@@ -123,33 +139,8 @@ export function AddEventModal({
           return;
         }
 
-        let targetScheduleId = selectedScheduleId;
-
-        if (!targetScheduleId || targetScheduleId === "NEW") {
-          if (!newScheduleTitle.trim()) {
-            setFormError("Please enter a title for the new schedule.");
-            setIsSubmitting(false);
-            return;
-          }
-
-          const schedRes = await createScheduleApi({
-            title: newScheduleTitle.trim(),
-          });
-
-          if (schedRes.success && schedRes.data) {
-            const createdSched = Array.isArray(schedRes.data) ? schedRes.data[0] : schedRes.data;
-            onScheduleCreated(createdSched);
-            targetScheduleId = createdSched.id;
-            setSelectedScheduleId(createdSched.id);
-          } else {
-            setFormError(schedRes.error || "Failed to create parent schedule.");
-            setIsSubmitting(false);
-            return;
-          }
-        }
-
         const res = await createScheduleItemApi({
-          schedule_id: targetScheduleId,
+          schedule_id: selectedScheduleId,
           title: schedItemTitle.trim(),
           days: schedSelectedDays,
           start_time: schedStartTime,
@@ -166,9 +157,19 @@ export function AddEventModal({
           setFormError(res.error || "Failed to create schedule item.");
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Form Submit Error:", err);
-      setFormError(err instanceof Error ? err.message : "Error creating item.");
+      const isConflict =
+        err instanceof ScheduleConflictError ||
+        (err instanceof Error && err.name === "ScheduleConflictError") ||
+        (err instanceof Error && "conflicts" in err);
+
+      if (isConflict && err instanceof Error && "conflicts" in err) {
+        setConflictWarnings((err as ScheduleConflictError).conflicts);
+        setFormError(err.message);
+      } else {
+        setFormError(err instanceof Error ? err.message : "Error creating item.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -215,6 +216,36 @@ export function AddEventModal({
         {formError && (
           <div className="p-3 text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20 rounded-xl">
             {formError}
+          </div>
+        )}
+
+        {conflictWarnings.length > 0 && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="size-3.5" />
+              Schedule Conflict — overlapping times detected
+            </div>
+            <div className="space-y-1.5">
+              {conflictWarnings.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border border-amber-500/20 bg-background/80 px-3 py-2 text-xs space-y-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-foreground truncate">{c.title}</span>
+                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <Clock className="size-2.5" />
+                      {c.start_time} – {c.end_time}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="text-[10px]">in <strong className="text-foreground">{c.schedule_title}</strong></span>
+                    <span className="text-[10px]">·</span>
+                    <span className="text-[10px]">{c.overlapping_days.join(", ")}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -326,31 +357,17 @@ export function AddEventModal({
                   onChange={(e) => setSelectedScheduleId(e.target.value)}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
                 >
-                  {schedules.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title}
-                    </option>
-                  ))}
-                  <option value="NEW">+ Create New Schedule...</option>
+                  {schedules.length === 0 ? (
+                    <option value="">No schedules available. Create one first!</option>
+                  ) : (
+                    schedules.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
-
-              {(selectedScheduleId === "NEW" || !selectedScheduleId || schedules.length === 0) && (
-                <div className="space-y-1.5">
-                  <label htmlFor="new_sched_title" className="text-xs font-medium text-foreground">
-                    New Schedule Title
-                  </label>
-                  <Input
-                    id="new_sched_title"
-                    type="text"
-                    placeholder="e.g. Work Week Schedule"
-                    value={newScheduleTitle}
-                    onChange={(e) => setNewScheduleTitle(e.target.value)}
-                    required
-                    className="h-10 bg-background"
-                  />
-                </div>
-              )}
 
               <div className="space-y-1.5">
                 <label htmlFor="sched_item_title" className="text-xs font-medium text-foreground">

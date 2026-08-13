@@ -66,24 +66,32 @@ export function CalendarMonthView({
                     <div
                       key={ev.id}
                       onClick={(e) => onItemClick(ev, e)}
-                      className="px-1.5 py-0.5 rounded text-[11px] font-medium truncate flex items-center justify-between gap-1 border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
+                      className="px-1.5 py-0.5 rounded text-[11px] font-medium flex flex-col gap-0.5 border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
                       style={{
                         backgroundColor: cat?.color ? `${cat.color}25` : "#3b82f625",
                         color: cat?.color || "#3b82f6",
                         borderColor: cat?.color ? `${cat.color}50` : "#3b82f650",
                       }}
                     >
-                      <div className="flex items-center gap-1 min-w-0 truncate">
-                        <span
-                          className="size-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: cat?.color || "#3b82f6" }}
-                        />
-                        <span className="truncate">{ev.title}</span>
+                      <div className="flex items-center justify-between gap-1 min-w-0">
+                        <div className="flex items-center gap-1 min-w-0 truncate">
+                          <span
+                            className="size-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: cat?.color || "#3b82f6" }}
+                          />
+                          <span className="truncate font-semibold">{ev.title}</span>
+                        </div>
+
+                        {isSchedule ? (
+                          <Repeat className="size-2.5 shrink-0 opacity-70" />
+                        ) : null}
                       </div>
 
-                      {isSchedule ? (
-                        <Repeat className="size-2.5 shrink-0 opacity-70" />
-                      ) : null}
+                      {isSchedule && ev.scheduleTitle && (
+                        <span className="text-[9px] font-normal truncate opacity-75 leading-none">
+                          {ev.scheduleTitle}
+                        </span>
+                      )}
                     </div>
                   );
                 })}

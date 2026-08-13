@@ -3,7 +3,7 @@ import { createApiClient } from "@/lib/supabase/api";
 import { ScheduleItem } from "@/types/schedule";
 
 /**
- * Server-side cached function to fetch user schedule items by user ID.
+ * Server-side cached function to fetch user schedule items by joining with schedules table.
  * Employs Next.js 16 Cache Components ('use cache', cacheLife, cacheTag).
  */
 export async function fetchScheduleItemsCached(userId: string, token: string): Promise<ScheduleItem[]> {
@@ -14,13 +14,15 @@ export async function fetchScheduleItemsCached(userId: string, token: string): P
   const supabase = createApiClient(token);
   const { data, error } = await supabase
     .from("schedule_items")
-    .select("*")
-    .eq("user_id", userId)
+    .select("*, schedules!inner(user_id)")
+    .eq("schedules.user_id", userId)
     .order("start_time", { ascending: true });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data as ScheduleItem[]) ?? [];
+  // Map out joined schedules relation to return pure ScheduleItem[]
+  const items = (data ?? []).map(({ schedules, ...item }: any) => item as ScheduleItem);
+  return items;
 }

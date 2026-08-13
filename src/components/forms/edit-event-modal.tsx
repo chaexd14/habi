@@ -89,10 +89,11 @@ export function EditEventModal({
 
     if (item.type === "schedule_item") {
       const sItem = scheduleItems.find((s) => s.id === item.rawId);
-      if (sItem && Array.isArray(sItem.days)) {
-        setEditSelectedDays(sItem.days);
-      } else {
-        setEditSelectedDays(["MON"]);
+      if (sItem) {
+        if (Array.isArray(sItem.days)) {
+          setEditSelectedDays(sItem.days);
+        }
+        setEditCategoryId(sItem.category_id || item.categoryId || "");
       }
     }
   }, [item, scheduleItems]);

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Repeat, Calendar, Layers } from "lucide-react"
 import { useProfile } from "@/providers/profile-provider"
+import { NavSchedule } from "@/components/nav-schedule"
 
 import Link from "next/link"
 
@@ -70,6 +71,7 @@ function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         <NavMain />
+        <NavSchedule />
         <NavCategory />
       </SidebarContent>
     </Sidebar>
