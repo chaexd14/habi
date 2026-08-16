@@ -67,18 +67,25 @@ export function AddScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+      />
+
+      {/* Modal Dialog Card */}
+      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-card text-card-foreground p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors"
         >
-          <X className="size-5" />
+          <X className="size-4" />
         </button>
 
-        <div className="flex items-center gap-2 font-bold text-lg text-foreground">
-          <Repeat className="size-5 text-blue-500" />
+        <div className="flex items-center gap-2 font-bold text-base sm:text-lg text-foreground">
+          <Repeat className="size-4.5 text-blue-500" />
           Create New Schedule
         </div>
 
@@ -88,7 +95,7 @@ export function AddScheduleModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
           <div className="space-y-1.5">
             <label htmlFor="sched_title" className="text-xs font-medium text-foreground">
               Schedule Title
@@ -101,7 +108,6 @@ export function AddScheduleModal({
               onChange={(e) => setTitle(e.target.value)}
               required
               autoFocus
-              className="h-10 bg-background"
             />
           </div>
 
@@ -115,11 +121,10 @@ export function AddScheduleModal({
               placeholder="Add notes or goals for this schedule..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="h-10 bg-background"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1.5">
               <label htmlFor="sched_start_date" className="text-xs font-medium text-foreground">
                 Start Date (Optional)
@@ -129,7 +134,6 @@ export function AddScheduleModal({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-10 bg-background text-xs"
               />
             </div>
 
@@ -142,12 +146,11 @@ export function AddScheduleModal({
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-10 bg-background text-xs"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/50">
             <Button
               type="button"
               variant="outline"

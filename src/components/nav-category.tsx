@@ -80,10 +80,10 @@ export function NavCategory({
     <>
       <Collapsible defaultOpen className="group/collapsible w-full">
         <SidebarGroup className={className} {...props}>
-          <SidebarGroupLabel className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2">
-            <CollapsibleTrigger className="flex items-center gap-2 flex-1 cursor-pointer select-none text-left py-1">
-              <ChevronRight className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-              <FolderKanban className="size-3.5 shrink-0" />
+          <SidebarGroupLabel className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75 px-2 mb-1">
+            <CollapsibleTrigger className="flex items-center gap-1.5 flex-1 cursor-pointer select-none text-left py-1 hover:text-foreground transition-colors">
+              <ChevronRight className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/60" />
+              <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
               <span>Categories</span>
             </CollapsibleTrigger>
 
@@ -94,41 +94,40 @@ export function NavCategory({
                 e.stopPropagation();
                 setIsAddOpen(true);
               }}
-              className="p-1 rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
             >
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               <span className="sr-only">Add Category</span>
             </button>
           </SidebarGroupLabel>
 
           <CollapsibleContent>
-            <SidebarGroupContent className="mt-1">
+            <SidebarGroupContent className="mt-0.5">
               {loading ? (
-                <div className="space-y-2 px-2 py-1">
-                  <Skeleton className="h-7 w-full rounded-md" />
-                  <Skeleton className="h-7 w-3/4 rounded-md" />
-                  <Skeleton className="h-7 w-5/6 rounded-md" />
+                <div className="space-y-1.5 px-2 py-1">
+                  <Skeleton className="h-6 w-full rounded-md" />
+                  <Skeleton className="h-6 w-3/4 rounded-md" />
                 </div>
               ) : error ? (
-                <div className="px-2 py-1.5 text-xs text-destructive">
+                <div className="px-2 py-1 text-xs text-destructive">
                   Failed to load categories
                 </div>
               ) : categories.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-muted-foreground italic flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Tag className="size-3.5 opacity-60" />
+                <div className="px-2.5 py-2 text-xs text-muted-foreground italic flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-[11px]">
+                    <Tag className="size-3 opacity-60" />
                     No categories yet
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsAddOpen(true)}
-                    className="text-primary font-medium hover:underline not-italic"
+                    className="text-primary font-medium hover:underline not-italic text-[11px]"
                   >
                     + Create
                   </button>
                 </div>
               ) : (
-                <SidebarMenu>
+                <SidebarMenu className="space-y-0.5">
                   {categories.map((category) => {
                     const isActive = activeCategoryId === category.id;
                     return (
@@ -137,14 +136,14 @@ export function NavCategory({
                           size="sm"
                           isActive={isActive}
                           onClick={() => onSelectCategory?.(category)}
-                          className="group/cat flex items-center justify-between"
+                          className="group/cat flex items-center justify-between rounded-lg h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span
-                              className="size-2.5 rounded-full shrink-0 shadow-xs border border-white/20"
+                              className="size-2 rounded-full shrink-0 shadow-2xs"
                               style={{ backgroundColor: category.color || "#3b82f6" }}
                             />
-                            <span className="truncate text-sm font-medium">
+                            <span className="truncate text-xs font-medium">
                               {category.name}
                             </span>
                           </div>

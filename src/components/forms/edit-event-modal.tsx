@@ -185,25 +185,32 @@ export function EditEventModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+      />
+
+      {/* Modal Dialog Card */}
+      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-card text-card-foreground p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 space-y-4">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors"
         >
-          <X className="size-5" />
+          <X className="size-4" />
         </button>
 
         <div>
-          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
             {item.type === "schedule_item" ? (
               <>
-                <Repeat className="size-5 text-blue-500" /> Edit Schedule Item
+                <Repeat className="size-4.5 text-blue-500" /> Edit Schedule Item
               </>
             ) : (
               <>
-                <CalendarIcon className="size-5 text-primary" /> Edit Calendar Event
+                <CalendarIcon className="size-4.5 text-primary" /> Edit Calendar Event
               </>
             )}
           </h3>
@@ -218,14 +225,13 @@ export function EditEventModal({
           </div>
         )}
 
-        <div className="space-y-4 text-left">
+        <div className="space-y-3.5 text-left">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Title</label>
             <Input
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="h-10 bg-background"
             />
           </div>
 
@@ -241,10 +247,10 @@ export function EditEventModal({
                         key={d.code}
                         type="button"
                         onClick={() => toggleEditSchedDay(d.code)}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-md border transition-all ${
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-primary text-white border-primary shadow-xs"
-                            : "bg-background text-muted-foreground border-border hover:text-foreground"
+                            ? "bg-primary text-primary-foreground border-primary shadow-2xs font-bold"
+                            : "bg-background text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
                         {d.label}
@@ -260,7 +266,7 @@ export function EditEventModal({
                   <select
                     value={editScheduleId}
                     onChange={(e) => setEditScheduleId(e.target.value)}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
+                    className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
                   >
                     {schedules.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -279,7 +285,6 @@ export function EditEventModal({
                   type="date"
                   value={editDay}
                   onChange={(e) => setEditDay(e.target.value)}
-                  className="h-10 bg-background"
                 />
               </div>
 
@@ -289,20 +294,19 @@ export function EditEventModal({
                   type="text"
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="h-10 bg-background"
+                  placeholder="Add notes or details..."
                 />
               </div>
             </>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Start Time</label>
               <Input
                 type="time"
                 value={editStartTime}
                 onChange={(e) => setEditStartTime(e.target.value)}
-                className="h-10 bg-background"
               />
             </div>
 
@@ -312,7 +316,6 @@ export function EditEventModal({
                 type="time"
                 value={editEndTime}
                 onChange={(e) => setEditEndTime(e.target.value)}
-                className="h-10 bg-background"
               />
             </div>
           </div>
@@ -323,7 +326,7 @@ export function EditEventModal({
               <select
                 value={editCategoryId}
                 onChange={(e) => setEditCategoryId(e.target.value)}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
+                className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
               >
                 <option value="">No Category</option>
                 {categories.map((c) => (
@@ -336,15 +339,16 @@ export function EditEventModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/50">
           <Button
             type="button"
             variant="destructive"
+            size="sm"
             onClick={handleEditDelete}
             disabled={isDeleting || isSubmitting}
             className="gap-1.5 font-semibold"
           >
-            {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            {isDeleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
             Delete
           </Button>
 
@@ -352,6 +356,7 @@ export function EditEventModal({
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={onClose}
               disabled={isSubmitting || isDeleting}
             >
@@ -359,11 +364,12 @@ export function EditEventModal({
             </Button>
             <Button
               type="button"
+              size="sm"
               onClick={handleEditSave}
               disabled={isSubmitting || isDeleting}
               className="gap-1.5 font-semibold"
             >
-              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
               Save Changes
             </Button>
           </div>

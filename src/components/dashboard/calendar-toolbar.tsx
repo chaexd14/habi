@@ -48,86 +48,106 @@ export function CalendarToolbar({
   formatDisplayDate,
 }: CalendarToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-border bg-card/50 backdrop-blur-xs">
-      {/* Navigation & Title */}
+    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 border-b border-border/70 bg-card/60 backdrop-blur-md">
+      {/* Navigation & Date Display */}
       <div className="flex items-center gap-3">
         {sourceFilter !== "schedule" && (
-          <div className="flex items-center gap-1 bg-background rounded-lg border border-border p-0.5">
-            <Button variant="ghost" size="icon-sm" onClick={onPrev} title="Previous">
-              <ChevronLeft className="size-4" />
+          <div className="flex items-center gap-0.5 bg-background/90 rounded-lg border border-border/70 p-0.5 shadow-2xs">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onPrev}
+              title="Previous"
+              className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="size-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={onToday} className="px-2.5 text-xs font-semibold">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={onToday}
+              className="h-7 px-2.5 text-xs font-semibold rounded-md text-foreground hover:bg-muted"
+            >
               Today
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={onNext} title="Next">
-              <ChevronRight className="size-4" />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onNext}
+              title="Next"
+              className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="size-3.5" />
             </Button>
           </div>
         )}
 
-        <h2 className="text-lg md:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
           {sourceFilter === "schedule" ? (
             <>
-              <Repeat className="size-5 text-blue-500" />
-              {schedules.find((s) => s.id === selectedScheduleFilter)?.title || "Weekly Schedule"}
+              <Repeat className="size-4.5 text-blue-500 shrink-0" />
+              <span className="truncate">
+                {schedules.find((s) => s.id === selectedScheduleFilter)?.title || "Weekly Schedule"}
+              </span>
             </>
           ) : (
             <>
-              <CalendarIcon className="size-5 text-primary" />
-              {formatDisplayDate(currentDate, viewMode)}
+              <CalendarIcon className="size-4.5 text-primary shrink-0" />
+              <span>{formatDisplayDate(currentDate, viewMode)}</span>
             </>
           )}
         </h2>
       </div>
 
       {/* Source Filter (All / Calendar / Schedule) & View Switcher */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center rounded-lg border border-border bg-muted/40 p-1 text-xs font-semibold">
+      <div className="flex flex-wrap items-center gap-2.5">
+        {/* Filter Segmented Control */}
+        <div className="flex items-center rounded-lg border border-border/70 bg-muted/40 p-0.5 text-xs font-medium shadow-2xs">
           <button
             type="button"
             onClick={() => onFilterChange("all")}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               sourceFilter === "all"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground font-semibold shadow-2xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/30"
             }`}
           >
-            <Filter className="size-3" />
-            All
+            <Filter className="size-3 opacity-70" />
+            <span>All</span>
           </button>
           <button
             type="button"
             onClick={() => onFilterChange("calendar")}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               sourceFilter === "calendar"
-                ? "bg-background text-primary shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-primary font-semibold shadow-2xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/30"
             }`}
           >
-            <CalendarDays className="size-3" />
-            Calendar Items
+            <CalendarDays className="size-3 opacity-70" />
+            <span>Calendar</span>
           </button>
           <button
             type="button"
             onClick={() => onFilterChange("schedule")}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               sourceFilter === "schedule"
-                ? "bg-background text-blue-500 shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-blue-500 font-semibold shadow-2xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/30"
             }`}
           >
-            <Repeat className="size-3" />
-            Schedules
+            <Repeat className="size-3 opacity-70" />
+            <span>Schedule</span>
           </button>
         </div>
 
         {/* Specific Schedule Filter Dropdown */}
         {schedules.length > 0 && (sourceFilter === "schedule" || sourceFilter === "all") && (
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className="flex items-center text-xs">
             <select
               value={selectedScheduleFilter}
               onChange={(e) => onScheduleFilterChange(e.target.value)}
-              className="h-8.5 rounded-lg border border-border bg-background px-2.5 text-xs font-semibold shadow-2xs outline-none focus-visible:border-ring dark:bg-input/30"
+              className="h-8.5 rounded-lg border border-border/70 bg-background px-2.5 text-xs font-medium shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
             >
               <option value="ALL">All Schedules</option>
               {schedules.map((s) => (
@@ -140,15 +160,15 @@ export function CalendarToolbar({
         )}
 
         {/* View Mode Switcher Tabs */}
-        <div className="flex items-center rounded-lg border border-border bg-background p-1 text-xs font-semibold">
+        <div className="flex items-center rounded-lg border border-border/70 bg-muted/40 p-0.5 text-xs font-medium shadow-2xs">
           {sourceFilter !== "schedule" && (
             <button
               type="button"
               onClick={() => onViewModeChange("month")}
-              className={`px-3 py-1.5 rounded-md transition-all ${
+              className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
                 viewMode === "month"
-                  ? "bg-primary text-white shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/30"
               }`}
             >
               Month
@@ -160,10 +180,10 @@ export function CalendarToolbar({
               <button
                 type="button"
                 onClick={() => onViewModeChange("week")}
-                className={`px-3 py-1.5 rounded-md transition-all ${
+                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
                   viewMode === "week"
-                    ? "bg-primary text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/30"
                 }`}
               >
                 Week
@@ -172,10 +192,10 @@ export function CalendarToolbar({
                 <button
                   type="button"
                   onClick={() => onViewModeChange("day")}
-                  className={`px-3 py-1.5 rounded-md transition-all ${
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
                     viewMode === "day"
-                      ? "bg-primary text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/30"
                   }`}
                 >
                   Day
@@ -185,9 +205,10 @@ export function CalendarToolbar({
           )}
         </div>
 
-        <Button size="sm" onClick={onOpenAddModal} className="gap-1.5 font-semibold">
-          <Plus className="size-4" />
-          Add Item
+        {/* Action Button */}
+        <Button size="sm" onClick={onOpenAddModal} className="h-8.5 gap-1.5 font-semibold shadow-xs">
+          <Plus className="size-3.5" />
+          <span>Add Item</span>
         </Button>
       </div>
     </div>

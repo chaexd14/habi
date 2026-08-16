@@ -35,12 +35,12 @@ export function CalendarWeekView({
   onItemClick,
 }: CalendarWeekViewProps) {
   return (
-    <div className="flex h-full min-w-[750px] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+    <div className="flex h-full min-w-[750px] flex-col overflow-hidden bg-background select-none">
       {/* Calendar Header */}
-      <div className="sticky top-0 z-30 grid grid-cols-[70px_repeat(7,1fr)] border-b border-border bg-background/95 py-2.5 text-center text-xs font-semibold backdrop-blur">
+      <div className="sticky top-0 z-30 grid grid-cols-[68px_repeat(7,1fr)] border-b border-border/70 bg-background/90 py-2.5 text-center text-xs font-semibold backdrop-blur-md">
         {/* Time Header */}
-        <span className="flex items-center justify-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          <Clock className="size-3.5" />
+        <span className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+          <Clock className="size-3" />
           12H
         </span>
 
@@ -54,14 +54,14 @@ export function CalendarWeekView({
                 isToday ? "text-primary" : ""
               }`}
             >
-              {/* Today indicator */}
+              {/* Today indicator bar */}
               {isToday && (
-                <span className="absolute -top-2 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-primary" />
+                <span className="absolute -top-2.5 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-primary" />
               )}
 
               <span
-                className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
-                  isToday ? "text-primary" : "text-muted-foreground"
+                className={`text-[10px] font-bold uppercase tracking-[0.14em] ${
+                  isToday ? "text-primary font-extrabold" : "text-muted-foreground/80"
                 }`}
               >
                 {w.date.toLocaleDateString("en-US", {
@@ -71,10 +71,10 @@ export function CalendarWeekView({
 
               {sourceFilter !== "schedule" && (
                 <span
-                  className={`mt-0.5 flex size-7 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                  className={`mt-0.5 flex size-6.5 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     isToday
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-                      : "text-foreground"
+                      ? "bg-primary text-primary-foreground font-extrabold shadow-xs shadow-primary/30 ring-2 ring-primary/20"
+                      : "text-foreground hover:bg-muted/40"
                   }`}
                 >
                   {w.date.getDate()}
@@ -87,13 +87,13 @@ export function CalendarWeekView({
 
       {/* Calendar Body */}
       <div className="min-h-0 flex-1 overflow-y-auto max-h-[600px]">
-        <div className="grid grid-cols-[70px_repeat(7,1fr)] relative divide-x divide-border">
+        <div className="grid grid-cols-[68px_repeat(7,1fr)] relative divide-x divide-border/60">
           {/* Time Axis */}
-          <div className="divide-y divide-border/70 bg-muted/[0.18]">
+          <div className="divide-y divide-border/50 bg-muted/[0.12]">
             {timelineHours.map((hourStr) => (
               <div
                 key={hourStr}
-                className="flex items-start justify-end px-2 pt-1.5 font-mono text-[10px] font-medium tracking-tight text-muted-foreground"
+                className="flex items-start justify-end px-2 pt-1 font-mono text-[10px] font-medium tracking-tight text-muted-foreground/75"
                 style={{ height: `${HOUR_HEIGHT}px` }}
               >
                 {hourStr}
@@ -113,7 +113,7 @@ export function CalendarWeekView({
             return (
               <div
                 key={dIdx}
-                className="relative divide-y divide-border/60 bg-background/40"
+                className="relative divide-y divide-border/40 bg-background/30"
                 style={{
                   height: `${timelineHours.length * HOUR_HEIGHT}px`,
                 }}
@@ -122,7 +122,7 @@ export function CalendarWeekView({
                 {timelineHours.map((hourStr) => (
                   <div
                     key={hourStr}
-                    className="group border-b border-border/40 transition-colors hover:bg-muted/[0.16]"
+                    className="group border-b border-border/35 transition-colors hover:bg-muted/[0.12]"
                     style={{
                       height: `${HOUR_HEIGHT}px`,
                     }}
@@ -152,15 +152,15 @@ export function CalendarWeekView({
                         flex cursor-pointer flex-col justify-between
                         overflow-hidden rounded-lg
                         border p-1.5 pl-2.5
-                        text-xs font-semibold
-                        shadow-sm
-                        transition-all duration-200
+                        text-xs font-medium
+                        shadow-2xs
+                        transition-all duration-150
                         hover:z-20
-                        hover:-translate-y-[1px]
-                        hover:shadow-md
+                        hover:-translate-y-px
+                        hover:shadow-xs
                         focus-visible:outline-none
                         focus-visible:ring-2
-                        focus-visible:ring-primary
+                        focus-visible:ring-primary/40
                       "
                       style={{
                         top: `${topPx + 2}px`,
@@ -168,12 +168,12 @@ export function CalendarWeekView({
                         left: `calc(${leftPercent}% + 2px)`,
                         width: `calc(${widthPercent}% - 4px)`,
                         backgroundColor: cat?.color
-                          ? `${cat.color}28`
-                          : "#3b82f624",
+                          ? `${cat.color}18`
+                          : "#3b82f618",
                         color: cat?.color || "#3b82f6",
                         borderColor: cat?.color
-                          ? `${cat.color}70`
-                          : "#3b82f670",
+                          ? `${cat.color}45`
+                          : "#3b82f645",
                       }}
                     >
                       {/* Accent Bar */}
@@ -188,11 +188,11 @@ export function CalendarWeekView({
                         {/* Event Title */}
                         <div className="flex min-w-0 items-center gap-1.5">
                           {isSchedule && (
-                            <Repeat className="size-3 shrink-0 opacity-70" />
+                            <Repeat className="size-3 shrink-0 opacity-75" />
                           )}
 
                           <span
-                            className="truncate font-bold leading-tight"
+                            className="truncate font-semibold tracking-tight text-xs leading-tight"
                             style={{ color: cat?.color || "inherit" }}
                           >
                             {ev.title}
@@ -202,20 +202,20 @@ export function CalendarWeekView({
                         {/* Schedule Parent Title / Description */}
                         {ev.scheduleTitle && isSchedule ? (
                           <div className="mt-0.5 flex items-center">
-                            <span className="truncate text-[9px] font-semibold tracking-tight px-1 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                            <span className="truncate text-[9px] font-semibold tracking-tight px-1.5 py-0.2 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                               {ev.scheduleTitle}
                             </span>
                           </div>
                         ) : ev.description ? (
-                          <p className="mt-0.5 truncate text-[10px] font-normal leading-tight opacity-80">
+                          <p className="mt-0.5 truncate text-[10px] font-normal leading-tight opacity-75">
                             {ev.description}
                           </p>
                         ) : null}
 
                         {cat && (
                           <span
-                            className="inline-flex items-center gap-1 text-[9px] font-semibold mt-1 px-1.5 py-0.5 rounded-full border border-white/10 shrink-0"
-                            style={{ backgroundColor: `${cat.color}20`, color: cat.color }}
+                            className="inline-flex items-center gap-1 text-[9px] font-semibold mt-1 px-1.5 py-0.2 rounded-full border border-white/10 shrink-0"
+                            style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
                           >
                             <span className="size-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
                             {cat.name}
@@ -224,20 +224,18 @@ export function CalendarWeekView({
                       </div>
 
                       {/* Time */}
-                      <div className="mt-1 flex items-center gap-1.5">
+                      <div className="mt-1 flex items-center gap-1">
                         <div
-                          className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium"
+                          className="flex min-w-0 items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium font-mono"
                           style={{
                             backgroundColor: cat?.color
-                              ? `${cat.color}18`
-                              : "#3b82f618",
+                              ? `${cat.color}15`
+                              : "#3b82f615",
                           }}
                         >
                           <Clock className="size-2.5 shrink-0 opacity-70" />
-
-                          <span className="truncate font-mono">
-                            {format12h(ev.startTime || startH)} –{" "}
-                            {format12h(ev.endTime || endH)}
+                          <span className="truncate">
+                            {format12h(ev.startTime || startH)} – {format12h(ev.endTime || endH)}
                           </span>
                         </div>
                       </div>

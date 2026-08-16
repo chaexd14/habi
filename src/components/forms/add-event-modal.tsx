@@ -176,24 +176,32 @@ export function AddEventModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+      />
+
+      {/* Modal Dialog Card */}
+      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-card text-card-foreground p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 space-y-4">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors"
         >
-          <X className="size-5" />
+          <X className="size-4" />
         </button>
 
-        <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+        {/* Form Type Segmented Tabs */}
+        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60">
           <button
             type="button"
             onClick={() => setFormType("calendar_item")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "calendar_item"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground shadow-2xs font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <CalendarIcon className="size-3.5 text-primary" />
@@ -202,10 +210,10 @@ export function AddEventModal({
           <button
             type="button"
             onClick={() => setFormType("schedule_item")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "schedule_item"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground shadow-2xs font-bold"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
             }`}
           >
             <Repeat className="size-3.5 text-blue-500" />
@@ -249,7 +257,7 @@ export function AddEventModal({
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
+        <form onSubmit={handleFormSubmit} className="space-y-3.5 text-left">
           {formType === "calendar_item" ? (
             <>
               <div className="space-y-1.5">
@@ -264,7 +272,6 @@ export function AddEventModal({
                   onChange={(e) => setEventTitle(e.target.value)}
                   required
                   autoFocus
-                  className="h-10 bg-background"
                 />
               </div>
 
@@ -278,7 +285,6 @@ export function AddEventModal({
                   value={eventDay}
                   onChange={(e) => setEventDay(e.target.value)}
                   required
-                  className="h-10 bg-background"
                 />
               </div>
 
@@ -292,11 +298,10 @@ export function AddEventModal({
                   placeholder="Add notes or details..."
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
-                  className="h-10 bg-background"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1.5">
                   <label htmlFor="event_start" className="text-xs font-medium text-foreground">
                     Start Time
@@ -306,7 +311,6 @@ export function AddEventModal({
                     type="time"
                     value={eventStartTime}
                     onChange={(e) => setEventStartTime(e.target.value)}
-                    className="h-10 bg-background"
                   />
                 </div>
 
@@ -319,7 +323,6 @@ export function AddEventModal({
                     type="time"
                     value={eventEndTime}
                     onChange={(e) => setEventEndTime(e.target.value)}
-                    className="h-10 bg-background"
                   />
                 </div>
               </div>
@@ -333,7 +336,7 @@ export function AddEventModal({
                     id="event_cat"
                     value={eventCategoryId}
                     onChange={(e) => setEventCategoryId(e.target.value)}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
+                    className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
                   >
                     <option value="">No Category</option>
                     {categories.map((c) => (
@@ -355,7 +358,7 @@ export function AddEventModal({
                   id="sched_select"
                   value={selectedScheduleId}
                   onChange={(e) => setSelectedScheduleId(e.target.value)}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
+                  className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
                 >
                   {schedules.length === 0 ? (
                     <option value="">No schedules available. Create one first!</option>
@@ -380,7 +383,6 @@ export function AddEventModal({
                   value={schedItemTitle}
                   onChange={(e) => setSchedItemTitle(e.target.value)}
                   required
-                  className="h-10 bg-background"
                 />
               </div>
 
@@ -394,10 +396,10 @@ export function AddEventModal({
                         key={d.code}
                         type="button"
                         onClick={() => toggleSchedDay(d.code)}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-md border transition-all ${
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-primary text-white border-primary shadow-xs"
-                            : "bg-background text-muted-foreground border-border hover:text-foreground"
+                            ? "bg-primary text-primary-foreground border-primary shadow-2xs font-bold"
+                            : "bg-background text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
                         {d.label}
@@ -407,7 +409,7 @@ export function AddEventModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1.5">
                   <label htmlFor="sched_start" className="text-xs font-medium text-foreground">
                     Start Time
@@ -418,7 +420,6 @@ export function AddEventModal({
                     value={schedStartTime}
                     onChange={(e) => setSchedStartTime(e.target.value)}
                     required
-                    className="h-10 bg-background"
                   />
                 </div>
 
@@ -432,7 +433,6 @@ export function AddEventModal({
                     value={schedEndTime}
                     onChange={(e) => setSchedEndTime(e.target.value)}
                     required
-                    className="h-10 bg-background"
                   />
                 </div>
               </div>
@@ -446,7 +446,7 @@ export function AddEventModal({
                     id="sched_cat"
                     value={schedCategoryId}
                     onChange={(e) => setSchedCategoryId(e.target.value)}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs shadow-xs outline-none focus-visible:border-ring dark:bg-input/30"
+                    className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
                   >
                     <option value="">No Category</option>
                     {categories.map((c) => (
@@ -460,7 +460,7 @@ export function AddEventModal({
             </>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/50">
             <Button
               type="button"
               variant="outline"
@@ -486,3 +486,4 @@ export function AddEventModal({
     </div>
   );
 }
+

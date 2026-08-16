@@ -37,10 +37,10 @@ export function SignupForm({
   ...props
 }: SignupFormProps) {
   return (
-    <form className={cn("flex flex-col gap-6", className)} onSubmit={onSubmit} {...props}>
-      <FieldGroup>
+    <form className={cn("flex flex-col gap-5", className)} onSubmit={onSubmit} {...props}>
+      <FieldGroup className="space-y-4">
         {errors.form && (
-          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive font-medium">
+          <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive font-medium">
             {errors.form}
           </div>
         )}
@@ -50,20 +50,19 @@ export function SignupForm({
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
             required
-            className="bg-background h-12"
+            className="h-11"
             aria-invalid={!!errors.email?.length}
           />
           {errors.email?.length ? (
             <FieldError errors={errors.email.map((msg) => ({ message: msg }))} />
           ) : (
             <FieldDescription>
-              We&apos;ll use this to contact you. We will not share your email
-              with anyone else.
+              We&apos;ll use this to contact you. We will not share your email with anyone else.
             </FieldDescription>
           )}
         </Field>
@@ -73,11 +72,12 @@ export function SignupForm({
           <Input
             id="password"
             type="password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             required
-            className="bg-background h-12"
+            className="h-11"
             aria-invalid={!!errors.password?.length}
           />
           {errors.password?.length ? (
@@ -89,29 +89,17 @@ export function SignupForm({
           )}
         </Field>
 
-        <Field>
-          <Button type="submit" disabled={loading} className="h-12 font-bold w-full">
+        <Field className="pt-2">
+          <Button type="submit" disabled={loading} className="h-11 font-bold w-full shadow-xs">
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
                 Creating Account...
               </>
             ) : (
               "Create Account"
             )}
           </Button>
-        </Field>
-
-        <Field>
-          <FieldDescription className="px-6 text-center">
-            Already have an account?{" "}
-            <Link
-              href="/auth/login"
-              className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
-            >
-              Sign in
-            </Link>
-          </FieldDescription>
         </Field>
       </FieldGroup>
     </form>

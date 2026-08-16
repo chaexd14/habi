@@ -19,24 +19,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
+      <SidebarInset className="bg-background">
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-2 px-4 sm:px-6 backdrop-blur-md bg-background/85 border-b border-border/60 transition-colors">
+          <div className="flex items-center gap-3">
+            <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="h-4 bg-border/60"
             />
             <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
+              <BreadcrumbList className="text-xs font-medium">
+                <BreadcrumbItem className="hidden sm:block">
+                  <BreadcrumbLink href="/dashboard" className="text-muted-foreground/80 hover:text-foreground transition-colors">
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbSeparator className="hidden sm:block text-muted-foreground/40" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Schedule & Calendar</BreadcrumbPage>
+                  <BreadcrumbPage className="font-semibold text-foreground">Schedule & Calendar</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -45,9 +45,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <NotificationBell />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <main className="flex flex-1 flex-col p-4 sm:p-6 pt-3">
           {children}
-        </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )

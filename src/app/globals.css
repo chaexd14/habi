@@ -178,11 +178,40 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     letter-spacing: var(--tracking-normal);
   }
 
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
   }
+
+  /* Minimalist subtle scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--muted-foreground) 25%, transparent);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  }
+}
+
+@utility backdrop-glass {
+  background-color: color-mix(in oklch, var(--background) 85%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+@utility card-subtle {
+  background-color: var(--card);
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
 }

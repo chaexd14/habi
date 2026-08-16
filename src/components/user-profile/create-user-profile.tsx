@@ -151,10 +151,10 @@ export function CreateUserProfile({
   };
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
-      <FieldGroup>
+    <form className={cn("flex flex-col gap-5", className)} onSubmit={handleSubmit} {...props}>
+      <FieldGroup className="space-y-4">
         {formError && (
-          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive font-medium">
+          <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive font-medium">
             {formError}
           </div>
         )}
@@ -162,15 +162,15 @@ export function CreateUserProfile({
         {/* Avatar Upload */}
         <Field>
           <FieldLabel>Profile Avatar</FieldLabel>
-          <div className="flex items-center gap-5 pt-1">
+          <div className="flex items-center gap-4 pt-1">
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="relative group cursor-pointer size-20 rounded-full border border-border overflow-hidden shrink-0 transition-all hover:opacity-90"
+              className="relative group cursor-pointer size-18 rounded-full border border-border/80 overflow-hidden shrink-0 transition-all hover:opacity-90 shadow-xs"
             >
               <Avatar className="size-full">
                 <AvatarImage src={avatarUrl} alt="Avatar Preview" className="object-cover" />
-                <AvatarFallback className="text-lg font-bold bg-muted">
-                  {userName ? userName.slice(0, 2).toUpperCase() : <User className="size-6 text-muted-foreground" />}
+                <AvatarFallback className="text-base font-bold bg-muted">
+                  {userName ? userName.slice(0, 2).toUpperCase() : <User className="size-5 text-muted-foreground" />}
                 </AvatarFallback>
               </Avatar>
 
@@ -180,7 +180,7 @@ export function CreateUserProfile({
                 {isUploading ? (
                   <Loader2 className="size-5 animate-spin" />
                 ) : (
-                  <Camera className="size-5" />
+                  <Camera className="size-4" />
                 )}
               </div>
 
@@ -200,30 +200,30 @@ export function CreateUserProfile({
                 size="sm"
                 disabled={isUploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-9 font-medium"
+                className="h-8.5 font-medium"
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="mr-2 size-3.5 animate-spin" />
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                     Uploading...
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-2 size-3.5" />
+                    <Upload className="mr-1.5 size-3.5" />
                     Upload Photo
                   </>
                 )}
               </Button>
 
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-xs text-muted-foreground">Or pick:</span>
+                <span className="text-[11px] text-muted-foreground">Or pick:</span>
                 {DEFAULT_AVATARS.map((url, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setAvatarUrl(url)}
-                    className={`size-6 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
-                      avatarUrl === url ? "border-primary ring-1 ring-primary" : "border-transparent opacity-75 hover:opacity-100"
+                    className={`size-6 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 cursor-pointer ${
+                      avatarUrl === url ? "border-primary ring-1 ring-primary/40" : "border-transparent opacity-75 hover:opacity-100"
                     }`}
                   >
                     <img src={url} alt={`Preset ${idx + 1}`} className="size-full object-cover" />
@@ -248,7 +248,7 @@ export function CreateUserProfile({
             onChange={(e) => setUserName(e.target.value)}
             disabled={isSubmitting}
             required
-            className="bg-background h-12"
+            className="h-11"
             aria-invalid={!!fieldErrors.user_name}
           />
           {fieldErrors.user_name ? (
@@ -268,7 +268,7 @@ export function CreateUserProfile({
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
             disabled={isSubmitting}
-            className="bg-background h-12 w-full rounded-md border border-input px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30"
+            className="h-11 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring disabled:pointer-events-none disabled:opacity-50 dark:bg-input/20 cursor-pointer"
           >
             {!COMMON_TIMEZONES.includes(timezone) && timezone && (
               <option value={timezone}>{timezone} (Auto-Detected)</option>
@@ -285,11 +285,11 @@ export function CreateUserProfile({
         </Field>
 
         {/* Submit Button */}
-        <Field>
-          <Button type="submit" disabled={isSubmitting || isUploading} className="h-12 font-bold w-full">
+        <Field className="pt-2">
+          <Button type="submit" disabled={isSubmitting || isUploading} className="h-11 font-bold w-full shadow-xs">
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
                 Saving Profile...
               </>
             ) : (

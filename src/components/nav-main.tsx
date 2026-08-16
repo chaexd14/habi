@@ -45,21 +45,21 @@ export function NavMain() {
 
   if (!mounted) {
     return (
-      <div className="w-full max-w-full overflow-hidden p-1 group-data-[collapsible=icon]:hidden">
-        <Skeleton className="w-full h-64 rounded-lg border" />
+      <div className="w-full max-w-full overflow-hidden p-0.5 group-data-[collapsible=icon]:hidden">
+        <Skeleton className="w-full h-64 rounded-xl border border-sidebar-border/50" />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-full overflow-hidden p-1 group-data-[collapsible=icon]:hidden">
-      <div className="w-full max-w-full min-w-0 rounded-lg border border-border bg-card p-1 shadow-2xs">
+    <div className="w-full max-w-full overflow-hidden p-0.5 group-data-[collapsible=icon]:hidden">
+      <div className="w-full max-w-full min-w-0 rounded-xl border border-sidebar-border/70 bg-card/70 backdrop-blur-xs p-1.5 shadow-2xs">
         <Calendar
           mode="single"
           selected={date}
           onSelect={handleSelectDate}
           today={date}
-          className="w-full max-w-full min-w-0 p-1 [--cell-size:1.75rem]"
+          className="w-full max-w-full min-w-0 p-0.5 [--cell-size:1.75rem]"
         />
       </div>
     </div>
