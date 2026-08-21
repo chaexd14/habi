@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
+import Image from "next/image";
 import { useProfile } from "@/providers/profile-provider";
 import { CreateProfileSchema, CreateProfileInput } from "@/lib/validations/profile";
 import { uploadAvatarFile } from "@/lib/supabase/storage";
@@ -18,7 +19,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Upload, Camera, User } from "lucide-react";
+import { Loader2, Upload, Camera, User, Check } from "lucide-react";
 
 export interface CreateUserProfileProps extends React.ComponentProps<"form"> {
   onSuccess?: (profile: UserProfile) => void;
@@ -54,10 +55,16 @@ export function CreateUserProfile({
   const profileContext = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form State
+  // Form State with auto-detected timezone
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATARS[0]);
-  const [timezone, setTimezone] = useState("UTC");
+  const [timezone, setTimezone] = useState(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {
+      return "UTC";
+    }
+  });
   const role = "USER";
 
   // UI Status
@@ -65,18 +72,6 @@ export function CreateUserProfile({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  // Detect local timezone
-  useEffect(() => {
-    try {
-      const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (localTz) {
-        setTimezone(localTz);
-      }
-    } catch {
-      // Fallback stays UTC
-    }
-  }, []);
 
   // Handle avatar upload
   const handleAvatarFile = async (file: File) => {
@@ -151,34 +146,49 @@ export function CreateUserProfile({
   };
 
   return (
-    <form className={cn("flex flex-col gap-5", className)} onSubmit={handleSubmit} {...props}>
-      <FieldGroup className="space-y-4">
+    <form className={cn("flex flex-col gap-3.5", className)} onSubmit={handleSubmit} {...props}>
+      <FieldGroup className="space-y-3.5">
         {formError && (
-          <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive font-medium">
+          <div
+            role="alert"
+            aria-live="polite"
+            className="rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium"
+          >
             {formError}
           </div>
         )}
 
         {/* Avatar Upload */}
         <Field>
-          <FieldLabel>Profile Avatar</FieldLabel>
-          <div className="flex items-center gap-4 pt-1">
+          <FieldLabel className="text-xs font-medium">Avatar</FieldLabel>
+          <div className="flex items-center gap-3.5 pt-0.5">
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Upload custom avatar image"
               onClick={() => fileInputRef.current?.click()}
-              className="relative group cursor-pointer size-18 rounded-full border border-border/80 overflow-hidden shrink-0 transition-all hover:opacity-90 shadow-xs"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              className="relative group cursor-pointer size-16 rounded-md border border-border overflow-hidden shrink-0 transition-opacity hover:opacity-90 shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <Avatar className="size-full">
+              <Avatar className="size-full rounded-md">
                 <AvatarImage src={avatarUrl} alt="Avatar Preview" className="object-cover" />
-                <AvatarFallback className="text-base font-bold bg-muted">
+                <AvatarFallback className="text-sm font-medium bg-muted rounded-md">
                   {userName ? userName.slice(0, 2).toUpperCase() : <User className="size-5 text-muted-foreground" />}
                 </AvatarFallback>
               </Avatar>
 
-              <div className={`absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white transition-opacity ${
-                isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}>
+              <div
+                className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white transition-opacity ${
+                  isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
                 {isUploading ? (
-                  <Loader2 className="size-5 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <Camera className="size-4" />
                 )}
@@ -187,48 +197,66 @@ export function CreateUserProfile({
               <input
                 ref={fileInputRef}
                 type="file"
+                aria-label="Upload photo file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleFileSelect}
                 className="hidden"
               />
             </div>
 
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-1.5">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="xs"
                 disabled={isUploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8.5 font-medium"
+                className="h-7 text-xs font-medium rounded-md cursor-pointer"
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    <Loader2 className="mr-1 size-3 animate-spin" />
                     Uploading...
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-1.5 size-3.5" />
-                    Upload Photo
+                    <Upload className="mr-1 size-3" />
+                    Upload Image
                   </>
                 )}
               </Button>
 
-              <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-[11px] text-muted-foreground">Or pick:</span>
-                {DEFAULT_AVATARS.map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setAvatarUrl(url)}
-                    className={`size-6 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 cursor-pointer ${
-                      avatarUrl === url ? "border-primary ring-1 ring-primary/40" : "border-transparent opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <img src={url} alt={`Preset ${idx + 1}`} className="size-full object-cover" />
-                  </button>
-                ))}
+              <div
+                role="radiogroup"
+                aria-label="Preset avatar choices"
+                className="flex items-center gap-1.5"
+              >
+                <span className="text-[10px] text-muted-foreground font-normal">Presets:</span>
+                {DEFAULT_AVATARS.map((url, idx) => {
+                  const isSelected = avatarUrl === url;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-label={`Select preset avatar ${idx + 1}`}
+                      onClick={() => setAvatarUrl(url)}
+                      className={`size-5 rounded overflow-hidden border transition-transform hover:scale-105 cursor-pointer ${
+                        isSelected ? "border-foreground ring-1 ring-foreground/40" : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <Image
+                        src={url}
+                        alt={`Preset ${idx + 1}`}
+                        width={20}
+                        height={20}
+                        unoptimized
+                        className="size-full object-cover"
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -239,36 +267,37 @@ export function CreateUserProfile({
 
         {/* Username */}
         <Field>
-          <FieldLabel htmlFor="user_name">Username</FieldLabel>
+          <FieldLabel htmlFor="profile_user_name" className="text-xs font-medium">Username</FieldLabel>
           <Input
-            id="user_name"
+            id="profile_user_name"
             type="text"
             placeholder="johndoe"
+            autoComplete="username"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             disabled={isSubmitting}
             required
-            className="h-11"
+            className="h-8.5 rounded-md"
             aria-invalid={!!fieldErrors.user_name}
           />
           {fieldErrors.user_name ? (
             <FieldError errors={[{ message: fieldErrors.user_name }]} />
           ) : (
-            <FieldDescription>
-              Your unique display handle across Habi.
+            <FieldDescription className="text-[11px] text-muted-foreground">
+              Your unique handle across Habi.
             </FieldDescription>
           )}
         </Field>
 
         {/* Timezone */}
         <Field>
-          <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
+          <FieldLabel htmlFor="profile_timezone" className="text-xs font-medium">Timezone</FieldLabel>
           <select
-            id="timezone"
+            id="profile_timezone"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
             disabled={isSubmitting}
-            className="h-11 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring disabled:pointer-events-none disabled:opacity-50 dark:bg-input/20 cursor-pointer"
+            className="h-8.5 w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
             {!COMMON_TIMEZONES.includes(timezone) && timezone && (
               <option value={timezone}>{timezone} (Auto-Detected)</option>
@@ -279,21 +308,28 @@ export function CreateUserProfile({
               </option>
             ))}
           </select>
-          <FieldDescription>
-            Used for scheduling, notifications, and calendar views.
+          <FieldDescription className="text-[11px] text-muted-foreground">
+            Used for schedule timetable and reminder notifications.
           </FieldDescription>
         </Field>
 
         {/* Submit Button */}
-        <Field className="pt-2">
-          <Button type="submit" disabled={isSubmitting || isUploading} className="h-11 font-bold w-full shadow-xs">
+        <Field className="pt-1">
+          <Button
+            type="submit"
+            disabled={isSubmitting || isUploading}
+            className="h-8.5 font-medium text-xs w-full rounded-md shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+          >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                Saving Profile...
+                <Loader2 className="size-3.5 animate-spin" />
+                Saving...
               </>
             ) : (
-              "Complete Setup"
+              <>
+                <span>Complete Setup</span>
+                <Check className="size-3.5" />
+              </>
             )}
           </Button>
         </Field>

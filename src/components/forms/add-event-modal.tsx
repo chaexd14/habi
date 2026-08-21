@@ -11,7 +11,7 @@ import { createScheduleItemApi, ScheduleConflictError, ScheduleConflict } from "
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock } from "lucide-react";
 
 export type FormType = "calendar_item" | "schedule_item";
 
@@ -44,9 +44,7 @@ export function AddEventModal({
   categories,
   initialDayIso,
   onCalendarItemCreated,
-  onScheduleCreated,
   onScheduleItemCreated,
-  onOpenCreateSchedule,
 }: AddEventModalProps) {
   const [formType, setFormType] = useState<FormType>("calendar_item");
 
@@ -176,80 +174,98 @@ export function AddEventModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add_event_title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+    >
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-card text-card-foreground p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 space-y-4">
+      <div className="relative w-full max-w-md rounded-lg border border-border bg-card text-card-foreground p-5 shadow-lg z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-98 duration-150 space-y-3.5">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 transition-colors"
+          aria-label="Close add item dialog"
+          className="absolute top-3.5 right-3.5 p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
         >
           <X className="size-4" />
         </button>
 
-        {/* Form Type Segmented Tabs */}
-        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60">
+        <h3 id="add_event_title" className="sr-only">
+          {formType === "calendar_item" ? "Create Calendar Event" : "Create Recurring Schedule Item"}
+        </h3>
+
+        {/* Form Type Segmented Switcher */}
+        <div
+          role="radiogroup"
+          aria-label="Choose item type"
+          className="flex items-center gap-0.5 bg-muted/50 p-0.5 rounded-md border border-border"
+        >
           <button
             type="button"
+            role="radio"
+            aria-checked={formType === "calendar_item"}
             onClick={() => setFormType("calendar_item")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "calendar_item"
-                ? "bg-background text-foreground shadow-2xs font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                ? "bg-background text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <CalendarIcon className="size-3.5 text-primary" />
-            Calendar Event
+            <CalendarIcon className="size-3 opacity-70" aria-hidden="true" />
+            <span>Single Event</span>
           </button>
           <button
             type="button"
+            role="radio"
+            aria-checked={formType === "schedule_item"}
             onClick={() => setFormType("schedule_item")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "schedule_item"
-                ? "bg-background text-foreground shadow-2xs font-bold"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                ? "bg-background text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Repeat className="size-3.5 text-blue-500" />
-            Recurring Schedule
+            <Repeat className="size-3 opacity-70" aria-hidden="true" />
+            <span>Recurring Routine</span>
           </button>
         </div>
 
         {formError && (
-          <div className="p-3 text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20 rounded-xl">
+          <div role="alert" className="p-2.5 text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20 rounded-md">
             {formError}
           </div>
         )}
 
         {conflictWarnings.length > 0 && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-3.5" />
-              Schedule Conflict — overlapping times detected
+          <div role="alert" className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="size-3.5 shrink-0" />
+              <span>Schedule Conflict — overlapping times</span>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {conflictWarnings.map((c) => (
                 <div
                   key={c.id}
-                  className="rounded-lg border border-amber-500/20 bg-background/80 px-3 py-2 text-xs space-y-1"
+                  className="rounded border border-amber-500/20 bg-background/90 px-2 py-1.5 text-xs space-y-0.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-foreground truncate">{c.title}</span>
-                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <span className="font-medium text-foreground truncate">{c.title}</span>
+                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-1 rounded flex items-center gap-0.5">
                       <Clock className="size-2.5" />
                       {c.start_time} – {c.end_time}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-[10px]">in <strong className="text-foreground">{c.schedule_title}</strong></span>
-                    <span className="text-[10px]">·</span>
-                    <span className="text-[10px]">{c.overlapping_days.join(", ")}</span>
+                  <div className="flex items-center gap-1.5 text-muted-foreground text-[10px]">
+                    <span>in <strong className="text-foreground">{c.schedule_title}</strong></span>
+                    <span>·</span>
+                    <span>{c.overlapping_days.join(", ")}</span>
                   </div>
                 </div>
               ))}
@@ -257,10 +273,10 @@ export function AddEventModal({
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="space-y-3.5 text-left">
+        <form onSubmit={handleFormSubmit} className="space-y-3 text-left">
           {formType === "calendar_item" ? (
             <>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="event_title" className="text-xs font-medium text-foreground">
                   Event Title
                 </label>
@@ -272,10 +288,11 @@ export function AddEventModal({
                   onChange={(e) => setEventTitle(e.target.value)}
                   required
                   autoFocus
+                  className="h-8 rounded-md"
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="event_day" className="text-xs font-medium text-foreground">
                   Date
                 </label>
@@ -285,24 +302,26 @@ export function AddEventModal({
                   value={eventDay}
                   onChange={(e) => setEventDay(e.target.value)}
                   required
+                  className="h-8 rounded-md"
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="event_desc" className="text-xs font-medium text-foreground">
                   Description (Optional)
                 </label>
                 <Input
                   id="event_desc"
                   type="text"
-                  placeholder="Add notes or details..."
+                  placeholder="Add notes..."
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
+                  className="h-8 rounded-md"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
                   <label htmlFor="event_start" className="text-xs font-medium text-foreground">
                     Start Time
                   </label>
@@ -311,10 +330,11 @@ export function AddEventModal({
                     type="time"
                     value={eventStartTime}
                     onChange={(e) => setEventStartTime(e.target.value)}
+                    className="h-8 rounded-md"
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="event_end" className="text-xs font-medium text-foreground">
                     End Time
                   </label>
@@ -323,12 +343,13 @@ export function AddEventModal({
                     type="time"
                     value={eventEndTime}
                     onChange={(e) => setEventEndTime(e.target.value)}
+                    className="h-8 rounded-md"
                   />
                 </div>
               </div>
 
               {categories.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="event_cat" className="text-xs font-medium text-foreground">
                     Category
                   </label>
@@ -336,7 +357,7 @@ export function AddEventModal({
                     id="event_cat"
                     value={eventCategoryId}
                     onChange={(e) => setEventCategoryId(e.target.value)}
-                    className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                   >
                     <option value="">No Category</option>
                     {categories.map((c) => (
@@ -350,7 +371,7 @@ export function AddEventModal({
             </>
           ) : (
             <>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
                   Target Schedule
                 </label>
@@ -358,7 +379,7 @@ export function AddEventModal({
                   id="sched_select"
                   value={selectedScheduleId}
                   onChange={(e) => setSelectedScheduleId(e.target.value)}
-                  className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
+                  className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                 >
                   {schedules.length === 0 ? (
                     <option value="">No schedules available. Create one first!</option>
@@ -372,34 +393,40 @@ export function AddEventModal({
                 </select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="sched_item_title" className="text-xs font-medium text-foreground">
-                  Schedule Item Title
+                  Routine Title
                 </label>
                 <Input
                   id="sched_item_title"
                   type="text"
-                  placeholder="e.g. Morning Standup, Daily Workout"
+                  placeholder="e.g. Morning Workout, Deep Work"
                   value={schedItemTitle}
                   onChange={(e) => setSchedItemTitle(e.target.value)}
                   required
+                  className="h-8 rounded-md"
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="text-xs font-medium text-foreground">Recurring Days</label>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div
+                  role="group"
+                  aria-label="Select recurring days of the week"
+                  className="flex items-center gap-1 flex-wrap"
+                >
                   {DAY_CODES.map((d) => {
                     const isSelected = schedSelectedDays.includes(d.code);
                     return (
                       <button
                         key={d.code}
                         type="button"
+                        aria-pressed={isSelected}
                         onClick={() => toggleSchedDay(d.code)}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors cursor-pointer ${
                           isSelected
-                            ? "bg-primary text-primary-foreground border-primary shadow-2xs font-bold"
-                            : "bg-background text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
                         {d.label}
@@ -409,8 +436,8 @@ export function AddEventModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
                   <label htmlFor="sched_start" className="text-xs font-medium text-foreground">
                     Start Time
                   </label>
@@ -420,10 +447,11 @@ export function AddEventModal({
                     value={schedStartTime}
                     onChange={(e) => setSchedStartTime(e.target.value)}
                     required
+                    className="h-8 rounded-md"
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="sched_end" className="text-xs font-medium text-foreground">
                     End Time
                   </label>
@@ -433,12 +461,13 @@ export function AddEventModal({
                     value={schedEndTime}
                     onChange={(e) => setSchedEndTime(e.target.value)}
                     required
+                    className="h-8 rounded-md"
                   />
                 </div>
               </div>
 
               {categories.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label htmlFor="sched_cat" className="text-xs font-medium text-foreground">
                     Category
                   </label>
@@ -446,7 +475,7 @@ export function AddEventModal({
                     id="sched_cat"
                     value={schedCategoryId}
                     onChange={(e) => setSchedCategoryId(e.target.value)}
-                    className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
                   >
                     <option value="">No Category</option>
                     {categories.map((c) => (
@@ -460,17 +489,23 @@ export function AddEventModal({
             </>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border mt-4">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
+              className="rounded-md font-medium cursor-pointer"
             >
               Cancel
             </Button>
-            <Button type="submit" size="sm" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting}
+              className="rounded-md font-medium cursor-pointer"
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -487,3 +522,4 @@ export function AddEventModal({
   );
 }
 
+export default AddEventModal;

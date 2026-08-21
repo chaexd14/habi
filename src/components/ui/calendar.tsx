@@ -27,17 +27,10 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
-  const [currentToday, setCurrentToday] = React.useState<Date | undefined>(today)
-
-  React.useEffect(() => {
-    if (!today) {
-      setCurrentToday(new Date())
-    }
-  }, [today])
 
   return (
     <DayPicker
-      today={today ?? currentToday}
+      today={today}
       showOutsideDays={showOutsideDays}
       className={cn(
         "group/calendar bg-background p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",

@@ -32,6 +32,14 @@ export function parseEndTimeToHours(
   return endH;
 }
 
+type PreparedEvent<T> = {
+  ev: T;
+  start: number;
+  end: number;
+  originalIndex: number;
+  colIdx?: number;
+};
+
 /**
  * Given a list of events for a single day, calculates side-by-side overlapping layout
  * column positions (left percent and width percent).
@@ -44,7 +52,7 @@ export function computeOverlappingLayout<T extends { startTime?: string | null; 
   if (!events || events.length === 0) return [];
 
   // 1. Map events with start/end numeric hours and original index
-  const prepared = events.map((ev, index) => {
+  const prepared: PreparedEvent<T>[] = events.map((ev, index) => {
     const start = parseTimeToHours(ev.startTime) ?? minHour;
     const rawEnd = parseEndTimeToHours(ev.endTime, ev.startTime, parseTimeToHours) ?? (start + 1);
     const end = Math.max(rawEnd, start + 0.5); // Ensure minimum half-hour duration for layout
@@ -58,8 +66,8 @@ export function computeOverlappingLayout<T extends { startTime?: string | null; 
   });
 
   // 3. Group into overlapping clusters
-  const clusters: Array<typeof prepared> = [];
-  let currentCluster: typeof prepared = [];
+  const clusters: Array<PreparedEvent<T>[]> = [];
+  let currentCluster: PreparedEvent<T>[] = [];
   let clusterEnd = -1;
 
   for (const item of prepared) {
@@ -83,7 +91,7 @@ export function computeOverlappingLayout<T extends { startTime?: string | null; 
   const result: Array<PositionedEvent<T>> = [];
 
   for (const cluster of clusters) {
-    const columns: Array<Array<typeof prepared[0]>> = [];
+    const columns: Array<PreparedEvent<T>[]> = [];
 
     for (const item of cluster) {
       let placed = false;
@@ -91,20 +99,20 @@ export function computeOverlappingLayout<T extends { startTime?: string | null; 
         const lastInCol = columns[colIdx][columns[colIdx].length - 1];
         if (lastInCol.end <= item.start) {
           columns[colIdx].push(item);
-          (item as any).colIdx = colIdx;
+          item.colIdx = colIdx;
           placed = true;
           break;
         }
       }
       if (!placed) {
-        (item as any).colIdx = columns.length;
+        item.colIdx = columns.length;
         columns.push([item]);
       }
     }
 
     const numCols = columns.length;
     for (const item of cluster) {
-      const colIdx = (item as any).colIdx || 0;
+      const colIdx = item.colIdx || 0;
       result.push({
         event: item.ev,
         leftPercent: (colIdx / numCols) * 100,

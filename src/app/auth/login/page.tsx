@@ -11,12 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,53 +73,58 @@ export default function LoginPage() {
   return (
     <div className="min-h-svh bg-background lg:grid lg:grid-cols-2">
       {/* Left Section: Login Form */}
-      <div className="flex min-h-svh flex-col justify-between px-6 py-8 sm:px-10 lg:px-16 xl:px-20">
+      <div className="flex min-h-svh flex-col justify-between px-6 py-8 sm:px-12 lg:px-16 xl:px-20">
         {/* Header & Logo */}
         <div className="flex items-center justify-between">
-          <Link href="/" className="inline-block">
+          <Link href="/" className="inline-block" aria-label="Habi Home">
             <Image
               src="/habi_logo_landscape.png"
               alt="Habi Logo"
               width={800}
               height={800}
               priority
-              className="h-16 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </Link>
         </div>
 
         {/* Main Content */}
         <div className="flex items-center justify-center py-8">
-          <div className="w-full max-w-md space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <div className="w-full max-w-sm space-y-5">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Welcome back
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Enter your credentials to access your schedules and tasks.
+              <p className="text-xs text-muted-foreground">
+                Sign in to your schedules, calendars, and routines.
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-              <FieldGroup className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-3.5">
+              <FieldGroup className="space-y-3.5">
                 {errors.form && (
-                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive font-medium flex items-center gap-2">
-                    <AlertCircle className="size-4 shrink-0" />
+                  <div
+                    role="alert"
+                    aria-live="polite"
+                    className="rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium flex items-center gap-2"
+                  >
+                    <AlertCircle className="size-3.5 shrink-0" />
                     <span>{errors.form}</span>
                   </div>
                 )}
 
                 <Field>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <FieldLabel htmlFor="email" className="text-xs font-medium">Email address</FieldLabel>
                   <Input
                     id="email"
                     type="email"
                     placeholder="name@example.com"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     required
-                    className="h-11"
+                    className="h-8.5 rounded-md"
                     aria-invalid={!!errors.email?.length}
                   />
                   {errors.email?.length && (
@@ -130,17 +134,18 @@ export default function LoginPage() {
 
                 <Field>
                   <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldLabel htmlFor="password" className="text-xs font-medium">Password</FieldLabel>
                   </div>
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
                     required
-                    className="h-11"
+                    className="h-8.5 rounded-md"
                     aria-invalid={!!errors.password?.length}
                   />
                   {errors.password?.length && (
@@ -148,19 +153,22 @@ export default function LoginPage() {
                   )}
                 </Field>
 
-                <Field className="pt-2">
+                <Field className="pt-1">
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-11 w-full font-bold shadow-xs"
+                    className="h-8.5 w-full font-medium text-xs rounded-md shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        <Loader2 className="size-3.5 animate-spin" />
                         Signing in...
                       </>
                     ) : (
-                      "Sign In"
+                      <>
+                        <span>Sign In</span>
+                        <ArrowRight className="size-3.5" />
+                      </>
                     )}
                   </Button>
                 </Field>
@@ -175,39 +183,38 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
-              className="font-semibold text-primary underline underline-offset-4 hover:opacity-90"
+              className="font-medium text-foreground underline underline-offset-4 hover:opacity-80"
             >
-              Sign up
+              Create account
             </Link>
           </p>
         </div>
       </div>
 
-      {/* Right Section: Visual Showcase */}
-      <div className="relative hidden overflow-hidden lg:block">
+      {/* Right Section: Minimalist Editorial Showcase */}
+      <div className="relative hidden overflow-hidden lg:block bg-muted border-l border-border">
         <Image
           src="/sdad.png"
           alt="Habi Workspace"
           fill
           priority
-          className="object-cover"
+          className="object-cover opacity-85 dark:opacity-75"
         />
 
-        <div className="absolute inset-0 bg-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
-        <div className="absolute inset-x-0 bottom-0 p-12 text-white xl:p-16">
-          <div className="max-w-lg space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="size-3 text-amber-300" />
-              <span>Smart Habit Scheduling</span>
-            </div>
+        <div className="absolute inset-x-0 bottom-0 p-10 text-white xl:p-14">
+          <div className="max-w-md space-y-2.5">
+            <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-white/20 backdrop-blur-xs border border-white/20 text-white">
+              Minimalist Scheduling
+            </span>
 
-            <h2 className="text-3xl font-semibold leading-tight xl:text-4xl text-white">
+            <h2 className="text-2xl font-semibold leading-tight text-white">
               Stay synchronized with your daily routines.
             </h2>
 
-            <p className="max-w-md text-sm leading-6 text-white/80">
-              Manage calendars, recurring weekly schedules, and conflicts in one unified minimalist workspace.
+            <p className="text-xs leading-relaxed text-white/80">
+              Manage calendars, recurring weekly schedules, and time blocks in one unified workspace.
             </p>
           </div>
         </div>

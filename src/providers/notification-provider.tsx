@@ -41,9 +41,28 @@ const NotificationContext = createContext<NotificationContextType>({
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { userProfile } = useProfile();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  
+  // Lazy state initialization
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storedNotifs = localStorage.getItem(STORAGE_KEY);
+        return storedNotifs ? JSON.parse(storedNotifs) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [toastNotification, setToastNotification] = useState<NotificationItem | null>(null);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
+
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(() => {
+    if (typeof window !== "undefined") {
+      return "Notification" in window ? Notification.permission : "unsupported";
+    }
+    return "unsupported";
+  });
 
   const calendarItemsRef = useRef<CalendarItem[]>([]);
   const scheduleItemsRef = useRef<ScheduleItem[]>([]);
@@ -53,27 +72,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Synchronously load notified keys set from localStorage to prevent re-notifying on page reload
   const notifiedKeysRef = useRef<Set<string>>(new Set());
 
-  // Initialize permission state & load stored notifications and notified keys
   useEffect(() => {
     if (typeof window !== "undefined") {
-      if ("Notification" in window) {
-        setPermission(Notification.permission);
-      } else {
-        setPermission("unsupported");
-      }
-
       try {
-        const storedNotifs = localStorage.getItem(STORAGE_KEY);
-        if (storedNotifs) {
-          setNotifications(JSON.parse(storedNotifs));
-        }
-
         const storedKeys = localStorage.getItem(NOTIFIED_KEYS_STORAGE_KEY);
         if (storedKeys) {
           notifiedKeysRef.current = new Set(JSON.parse(storedKeys));
         }
       } catch (e) {
-        console.error("Failed to load notifications from storage", e);
+        console.error("Failed to load notified keys from storage", e);
       }
     }
   }, []);

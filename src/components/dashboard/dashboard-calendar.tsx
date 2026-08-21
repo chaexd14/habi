@@ -20,7 +20,6 @@ import { CalendarWeekView } from "./calendar-week-view";
 import { CalendarDayView } from "./calendar-day-view";
 import { AddEventModal } from "@/components/forms/add-event-modal";
 import { AddScheduleModal } from "@/components/forms/add-schedule-modal";
-import { AddScheduleItemModal } from "@/components/forms/add-schedule-item-modal";
 import { EditEventModal, RenderEvent } from "@/components/forms/edit-event-modal";
 
 const DAY_MAP: Record<number, DayOfWeek> = {
@@ -54,7 +53,7 @@ function parseTimeToHours(timeStr?: string | null): number | null {
 
 function format12h(hourFloatOrStr?: number | string | null): string {
   if (hourFloatOrStr === null || hourFloatOrStr === undefined) return "";
-  
+
   let h = 0;
   let m = 0;
 
@@ -118,7 +117,7 @@ function getDynamicTimelineRange(events: RenderEvent[]): { minHour: number; maxH
     if (earliest < 24) {
       minH = Math.max(0, Math.floor(earliest));
       const targetMax = Math.max(minH + 8, Math.ceil(latest));
-      maxH = Math.min(30, targetMax); // Allow timeline to expand up to 30 (6:00 AM next day) for overnight shifts
+      maxH = Math.min(30, targetMax);
     }
   }
 
@@ -455,14 +454,14 @@ export function DashboardCalendar() {
   if (!mounted) {
     return (
       <div className="p-6 space-y-4">
-        <Skeleton className="h-12 w-full rounded-xl" />
-        <Skeleton className="h-96 w-full rounded-xl" />
+        <Skeleton className="h-14 w-full rounded-2xl" />
+        <Skeleton className="h-[600px] w-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-card rounded-2xl border border-border/80 shadow-md overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-card rounded-xl border border-border shadow-2xs overflow-hidden transition-colors">
       <CalendarToolbar
         currentDate={currentDate}
         viewMode={viewMode}
@@ -479,10 +478,10 @@ export function DashboardCalendar() {
         formatDisplayDate={formatDisplayDate}
       />
 
-      <div className="flex-1 overflow-auto bg-background/50">
+      <div className="flex-1 overflow-auto bg-background/20">
         {loading ? (
-          <div className="p-6 space-y-4">
-            <Skeleton className="h-80 w-full rounded-xl" />
+          <div className="p-4 space-y-3">
+            <Skeleton className="h-80 w-full rounded-lg" />
           </div>
         ) : viewMode === "month" ? (
           <CalendarMonthView

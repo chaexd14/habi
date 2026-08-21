@@ -50,13 +50,13 @@ export function Dialog({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
       />
 
       {/* Dialog Panel */}
       <div
         className={cn(
-          "relative w-full rounded-2xl border border-border/80 bg-card text-card-foreground shadow-2xl p-6 sm:p-7 z-10 animate-in fade-in zoom-in-95 duration-200",
+          "relative w-full rounded-xl border border-border bg-card text-card-foreground shadow-lg p-5 sm:p-6 z-10 animate-in fade-in zoom-in-98 duration-150",
           maxWidth,
           contentClassName
         )}
@@ -74,7 +74,7 @@ export function DialogHeader({
   return (
     <div
       className={cn(
-        "flex flex-col space-y-1.5 text-left mb-5",
+        "flex flex-col space-y-1 text-left mb-4",
         className
       )}
       {...props}
@@ -89,7 +89,7 @@ export function DialogFooter({
   return (
     <div
       className={cn(
-        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t border-border/50 mt-6",
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-3 border-t border-border mt-5",
         className
       )}
       {...props}
@@ -104,7 +104,7 @@ export function DialogTitle({
   return (
     <h2
       className={cn(
-        "text-lg font-bold tracking-tight text-foreground flex items-center gap-2",
+        "text-base font-semibold tracking-tight text-foreground flex items-center gap-2",
         className
       )}
       {...props}
@@ -136,7 +136,7 @@ export function DialogClose({
       type="button"
       onClick={onClose}
       className={cn(
-        "absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "absolute right-3.5 top-3.5 rounded-md p-1 text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
         className
       )}
       aria-label="Close"

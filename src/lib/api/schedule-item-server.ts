@@ -23,6 +23,6 @@ export async function fetchScheduleItemsCached(userId: string, token: string): P
   }
 
   // Map out joined schedules relation to return pure ScheduleItem[]
-  const items = (data ?? []).map(({ schedules, ...item }: any) => item as ScheduleItem);
+  const items = (data ?? []).map(({ schedules: _schedules, ...item }: Record<string, unknown>) => item as unknown as ScheduleItem);
   return items;
 }

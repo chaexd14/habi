@@ -92,33 +92,43 @@ export default function SignupPage() {
     <ProfileProvider>
       <div className="min-h-svh bg-background lg:grid lg:grid-cols-2">
         {/* Left Section: Signup / Profile Creation */}
-        <div className="flex min-h-svh flex-col justify-between px-6 py-8 sm:px-10 lg:px-16 xl:px-20">
+        <div className="flex min-h-svh flex-col justify-between px-6 py-8 sm:px-12 lg:px-16 xl:px-20">
           {/* Header & Logo */}
           <div className="flex items-center justify-between">
-            <Image
-              src="/habi_logo_landscape.png"
-              alt="Habi Logo"
-              width={800}
-              height={800}
-              priority
-              className="h-16 w-auto object-contain"
-            />
+            <Link href="/" className="inline-block" aria-label="Habi Home">
+              <Image
+                src="/habi_logo_landscape.png"
+                alt="Habi Logo"
+                width={800}
+                height={800}
+                priority
+                className="h-12 w-auto object-contain"
+              />
+            </Link>
 
             {/* Step Progress Indicator */}
-            <div className="flex items-center gap-2 text-xs font-semibold">
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all ${
-                step === 1 ? "border-primary bg-primary/10 text-primary" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              }`}>
-                {step > 1 ? <Check className="size-3.5" /> : <ShieldCheck className="size-3.5" />}
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <div
+                className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] transition-colors ${
+                  step === 1
+                    ? "border-foreground bg-foreground text-background font-medium"
+                    : "border-border bg-muted text-muted-foreground"
+                }`}
+              >
+                {step > 1 ? <Check className="size-3" /> : <ShieldCheck className="size-3" />}
                 <span>1. Account</span>
               </div>
 
-              <div className="w-4 h-px bg-border" />
+              <div className="w-2 h-px bg-border" />
 
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all ${
-                step === 2 ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-              }`}>
-                <User className="size-3.5" />
+              <div
+                className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] transition-colors ${
+                  step === 2
+                    ? "border-foreground bg-foreground text-background font-medium"
+                    : "border-border text-muted-foreground opacity-50"
+                }`}
+              >
+                <User className="size-3" />
                 <span>2. Profile</span>
               </div>
             </div>
@@ -126,15 +136,15 @@ export default function SignupPage() {
 
           {/* Form Content */}
           <div className="flex items-center justify-center py-6">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-sm">
               {step === 1 ? (
                 <>
-                  <div className="mb-8 space-y-2">
-                    <h1 className="text-4xl font-bold tracking-tight">
+                  <div className="mb-5 space-y-1">
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                       Create your account
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                      Start organizing your schedules and plans with Habi.
+                    <p className="text-xs text-muted-foreground">
+                      Start organizing your schedules and daily routines.
                     </p>
                   </div>
 
@@ -148,18 +158,18 @@ export default function SignupPage() {
                     onSubmit={handleSignup}
                   />
 
-                  <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
+                  <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
                     By creating an account, you agree to our{" "}
                     <Link
                       href="/terms"
-                      className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                      className="font-medium text-foreground underline underline-offset-4 hover:opacity-80"
                     >
-                      Terms of Service
+                      Terms
                     </Link>{" "}
                     and{" "}
                     <Link
                       href="/privacy"
-                      className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                      className="font-medium text-foreground underline underline-offset-4 hover:opacity-80"
                     >
                       Privacy Policy
                     </Link>
@@ -168,12 +178,12 @@ export default function SignupPage() {
                 </>
               ) : (
                 <>
-                  <div className="mb-8 space-y-2">
-                    <h1 className="text-4xl font-bold tracking-tight">
-                      Complete your profile
+                  <div className="mb-5 space-y-1">
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                      Set up your profile
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                      Set up your avatar, username, and time zone to finish.
+                    <p className="text-xs text-muted-foreground">
+                      Choose an avatar, display handle, and timezone.
                     </p>
                   </div>
 
@@ -188,60 +198,55 @@ export default function SignupPage() {
             {step === 1 ? (
               <p>
                 Already have an account?{" "}
-                <Link href="/auth/login" className="font-semibold text-primary underline underline-offset-4">
-                  Log in
+                <Link
+                  href="/auth/login"
+                  className="font-medium text-foreground underline underline-offset-4 hover:opacity-80"
+                >
+                  Sign in
                 </Link>
               </p>
             ) : (
               <button
                 type="button"
                 onClick={() => router.replace("/dashboard")}
-                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer"
               >
-                Skip for now and go to Dashboard
+                Skip to Dashboard →
               </button>
             )}
           </div>
         </div>
 
-        {/* Right Section: Visual Banner */}
-        <div className="relative hidden overflow-hidden lg:block">
+        {/* Right Section: Minimalist Editorial Banner */}
+        <div className="relative hidden overflow-hidden lg:block bg-muted border-l border-border">
           <Image
             src="/sdad.png"
             alt="Habi"
             fill
             priority
-            className="object-cover"
+            className="object-cover opacity-85 dark:opacity-75"
           />
 
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
 
-          <div className="absolute inset-x-0 bottom-0 p-12 text-white xl:p-16">
-            <div className="max-w-lg">
-              <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-white/70">
-                Habi
-              </p>
+          <div className="absolute inset-x-0 bottom-0 p-10 text-white xl:p-14">
+            <div className="max-w-md space-y-2.5">
+              <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-white/20 backdrop-blur-xs border border-white/20 text-white">
+                Seamless Setup
+              </span>
 
-              <h2 className="text-4xl font-semibold leading-tight xl:text-5xl">
+              <h2 className="text-2xl font-semibold leading-tight text-white">
                 {step === 1 ? (
-                  <>
-                    Build better habits.
-                    <br />
-                    Plan your days.
-                  </>
+                  "Build better habits. Plan your days."
                 ) : (
-                  <>
-                    Welcome aboard!
-                    <br />
-                    Let's set up your profile.
-                  </>
+                  "Welcome aboard. Personalize your space."
                 )}
               </h2>
 
-              <p className="mt-5 max-w-md text-sm leading-6 text-white/75">
+              <p className="text-xs leading-relaxed text-white/80">
                 {step === 1
-                  ? "Keep your schedules, tasks, and plans organized in one simple workspace."
-                  : "Personalize your profile image, handle, and timezone preferences."}
+                  ? "Synchronize your tasks, routines, and schedules in one minimalist workspace."
+                  : "Customize your avatar, display handle, and local time settings."}
               </p>
             </div>
           </div>

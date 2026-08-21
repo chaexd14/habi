@@ -96,29 +96,29 @@ export default function ProfileForm() {
 
   if (loadingProfile) {
     return (
-      <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin text-primary" />
+      <div className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin" />
         <span>Loading profile settings...</span>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4 text-left">
+    <form onSubmit={handleSubmit} className="max-w-md space-y-3 text-left">
       {message && (
         <div
-          className={`p-3 rounded-xl text-xs font-medium border flex items-center gap-2 ${
+          className={`p-2.5 rounded-md text-xs font-medium border flex items-center gap-2 ${
             message.type === "success"
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
               : "bg-destructive/10 text-destructive border-destructive/20"
           }`}
         >
-          {message.type === "success" && <CheckCircle2 className="size-4 shrink-0" />}
+          {message.type === "success" && <CheckCircle2 className="size-3.5 shrink-0" />}
           <span>{message.text}</span>
         </div>
       )}
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <label htmlFor="fullName" className="text-xs font-medium text-foreground flex items-center gap-1.5">
           <User className="size-3.5 text-muted-foreground" />
           Full Name
@@ -130,10 +130,11 @@ export default function ProfileForm() {
           onChange={(e) => setFullName(e.target.value)}
           placeholder="John Doe"
           required
+          className="h-8.5 rounded-md"
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <label htmlFor="timezone" className="text-xs font-medium text-foreground flex items-center gap-1.5">
           <Globe className="size-3.5 text-muted-foreground" />
           Timezone
@@ -142,7 +143,7 @@ export default function ProfileForm() {
           id="timezone"
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
-          className="h-9.5 w-full rounded-lg border border-border/80 bg-background px-3 text-xs shadow-2xs outline-none focus-visible:border-ring dark:bg-input/20 cursor-pointer"
+          className="h-8.5 w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
         >
           <option value="Asia/Manila">Asia/Manila</option>
           <option value="Asia/Tokyo">Asia/Tokyo</option>
@@ -158,11 +159,11 @@ export default function ProfileForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-9.5 font-semibold"
+          className="w-full h-8.5 rounded-md font-medium text-xs shadow-2xs"
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 size-3.5 animate-spin" />
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
               Saving...
             </>
           ) : isEditing ? (
@@ -175,4 +176,3 @@ export default function ProfileForm() {
     </form>
   );
 }
-

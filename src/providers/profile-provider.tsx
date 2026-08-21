@@ -52,8 +52,34 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchProfile(false);
-  }, [fetchProfile]);
+    let isMounted = true;
+    async function load() {
+      try {
+        const profileData = await getUserProfile(false);
+        if (isMounted) {
+          if (profileData.success && profileData.data.length > 0) {
+            setUserProfile(profileData.data[0]);
+          } else {
+            setUserProfile(null);
+          }
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error("Error loading user profile:", err);
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const createProfile = useCallback(async (input: CreateProfileInput): Promise<UserProfile> => {
     setLoading(true);
@@ -101,4 +127,3 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 export function useProfile() {
   return useContext(ProfileContext);
 }
-
