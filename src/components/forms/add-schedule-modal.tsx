@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Schedule } from "@/types/schedule";
 import { createScheduleApi } from "@/lib/api/schedule";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { X, Loader2, CalendarRange } from "lucide-react";
 
 export interface AddScheduleModalProps {
@@ -19,6 +21,7 @@ export function AddScheduleModal({
   onClose,
   onScheduleCreated,
 }: AddScheduleModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -27,7 +30,11 @@ export function AddScheduleModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,12 +72,12 @@ export function AddScheduleModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="add_sched_modal_title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
     >
       <div
         onClick={onClose}
@@ -143,24 +150,22 @@ export function AddScheduleModal({
               <label htmlFor="sched_start_date" className="text-xs font-medium text-foreground">
                 Start Date (Optional)
               </label>
-              <Input
+              <DatePicker
                 id="sched_start_date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-8 rounded-md"
+                date={startDate}
+                onDateChange={(d) => setStartDate(d)}
+                placeholder="Pick start date"
               />
             </div>
             <div className="space-y-1">
               <label htmlFor="sched_end_date" className="text-xs font-medium text-foreground">
                 End Date (Optional)
               </label>
-              <Input
+              <DatePicker
                 id="sched_end_date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-8 rounded-md"
+                date={endDate}
+                onDateChange={(d) => setEndDate(d)}
+                placeholder="Pick end date"
               />
             </div>
           </div>
@@ -194,7 +199,8 @@ export function AddScheduleModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

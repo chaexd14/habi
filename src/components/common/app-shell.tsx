@@ -16,7 +16,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { NotificationBell } from "@/components/common/notification-bell";
+import { NotificationToastListener } from "@/components/notifications/notification-toast-listener";
 import { CalendarDays } from "lucide-react";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,6 +35,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
+      <NotificationToastListener />
       <SidebarInset className="bg-background min-h-screen flex flex-col transition-colors">
         {/* Skip to Main Content Link for Accessibility */}
         <a
@@ -81,14 +82,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5">
             {/* Minimal Today Badge */}
             <div
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border text-[11px] font-medium text-muted-foreground select-none"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border text-[11px] font-medium text-muted-foreground select-none"
               title="Current Date"
             >
               <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="tracking-tight text-foreground font-semibold">{todayFormatted}</span>
             </div>
-
-            <NotificationBell />
           </div>
         </header>
 

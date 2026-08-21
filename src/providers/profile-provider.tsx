@@ -1,10 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getUserProfile, clearProfileCache, createProfileApi } from "@/lib/api/profile";
+import { getUserProfile, clearProfileCache, createProfileApi, updateProfileApi } from "@/lib/api/profile";
 import { uploadAvatarFile } from "@/lib/supabase/storage";
 import type { UserProfile } from "@/types/profile";
-import type { CreateProfileInput } from "@/lib/validations/profile";
+import type { CreateProfileInput, UpdateProfileInput } from "@/lib/validations/profile";
 
 interface ProfileContextType {
   userProfile: UserProfile | null;
@@ -12,6 +12,7 @@ interface ProfileContextType {
   error: Error | null;
   refetchProfile: (forceRefresh?: boolean) => Promise<void>;
   createProfile: (input: CreateProfileInput) => Promise<UserProfile>;
+  updateProfile: (id: string, input: UpdateProfileInput) => Promise<UserProfile>;
   uploadAvatar: (file: File) => Promise<string>;
   clearProfile: () => void;
 }
@@ -22,6 +23,7 @@ const ProfileContext = createContext<ProfileContextType>({
   error: null,
   refetchProfile: async () => { },
   createProfile: async () => { throw new Error("ProfileProvider not initialized"); },
+  updateProfile: async () => { throw new Error("ProfileProvider not initialized"); },
   uploadAvatar: async () => { throw new Error("ProfileProvider not initialized"); },
   clearProfile: () => { },
 });
@@ -98,6 +100,26 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateProfile = useCallback(
+    async (id: string, input: UpdateProfileInput): Promise<UserProfile> => {
+      setLoading(true);
+      try {
+        const response = await updateProfileApi(id, input);
+        const updated = response.data[0];
+        setUserProfile(updated);
+        setError(null);
+        return updated;
+      } catch (err) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        setError(errorObj);
+        throw errorObj;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const uploadAvatar = useCallback(async (file: File): Promise<string> => {
     return await uploadAvatarFile(file);
   }, []);
@@ -115,6 +137,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         error,
         refetchProfile: fetchProfile,
         createProfile,
+        updateProfile,
         uploadAvatar,
         clearProfile,
       }}

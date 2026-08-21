@@ -4,6 +4,13 @@ import * as React from "react";
 import { Schedule } from "@/types/schedule";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
@@ -47,6 +54,11 @@ export function CalendarToolbar({
   onOpenAddModal,
   formatDisplayDate,
 }: CalendarToolbarProps) {
+  const scheduleFilterItems = React.useMemo(() => [
+    { label: "All Schedules", value: "ALL" },
+    ...schedules.map((s) => ({ label: s.title, value: s.id })),
+  ], [schedules]);
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:px-4 border-b border-border bg-card">
       {/* Navigation & Date Display */}
@@ -161,19 +173,24 @@ export function CalendarToolbar({
         {/* Specific Schedule Filter Dropdown */}
         {schedules.length > 0 && (sourceFilter === "schedule" || sourceFilter === "all") && (
           <div className="flex items-center text-xs">
-            <select
+            <Select
+              items={scheduleFilterItems}
               value={selectedScheduleFilter}
-              onChange={(e) => onScheduleFilterChange(e.target.value)}
-              aria-label="Select specific schedule to filter"
-              className="h-7 rounded-md border border-border bg-background px-2 text-[11px] font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+              onValueChange={(val) => {
+                if (val) onScheduleFilterChange(val);
+              }}
             >
-              <option value="ALL">All Schedules</option>
-              {schedules.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="h-7 text-[11px] font-medium min-w-32 bg-background">
+                <SelectValue placeholder="All Schedules" />
+              </SelectTrigger>
+              <SelectContent>
+                {scheduleFilterItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 

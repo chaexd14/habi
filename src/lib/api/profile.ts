@@ -1,5 +1,5 @@
 import { UserProfileResponse } from "@/types/profile";
-import { CreateProfileInput } from "@/lib/validations/profile";
+import { CreateProfileInput, UpdateProfileInput } from "@/lib/validations/profile";
 import createClient from "@/lib/supabase/client";
 
 const CACHE_KEY = "habi_user_profile_cache";
@@ -118,6 +118,53 @@ export async function createProfileApi(profileData: CreateProfileInput): Promise
       sessionStorage.setItem(CACHE_KEY, JSON.stringify(updatedResponse));
     } catch (e) {
       console.error("Failed to save new profile to sessionStorage:", e);
+    }
+  }
+
+  return updatedResponse;
+}
+
+export async function updateProfileApi(
+  id: string,
+  profileData: UpdateProfileInput
+): Promise<UserProfileResponse> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("You must be signed in to update your profile.");
+  }
+
+  const response = await fetch(`/api/profiles/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+
+  const resJson = await response.json();
+
+  if (!response.ok || !resJson.success) {
+    throw new Error(resJson.error || resJson.message || "Failed to update profile.");
+  }
+
+  clearProfileCache();
+
+  const updatedProfile = resJson.data;
+  const updatedResponse: UserProfileResponse = {
+    success: true,
+    message: resJson.message || "Profile updated successfully!",
+    data: Array.isArray(updatedProfile) ? updatedProfile : [updatedProfile],
+  };
+
+  cachedProfileResponse = updatedResponse;
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(updatedResponse));
+    } catch (e) {
+      console.error("Failed to save updated profile to sessionStorage:", e);
     }
   }
 

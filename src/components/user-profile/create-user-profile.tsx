@@ -12,6 +12,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -66,6 +73,13 @@ export function CreateUserProfile({
     }
   });
   const role = "USER";
+
+  const timezoneItems = React.useMemo(() => [
+    ...(!COMMON_TIMEZONES.includes(timezone) && timezone
+      ? [{ label: `${timezone} (Auto-Detected)`, value: timezone }]
+      : []),
+    ...COMMON_TIMEZONES.map((tz) => ({ label: tz, value: tz })),
+  ], [timezone]);
 
   // UI Status
   const [isUploading, setIsUploading] = useState(false);
@@ -292,22 +306,25 @@ export function CreateUserProfile({
         {/* Timezone */}
         <Field>
           <FieldLabel htmlFor="profile_timezone" className="text-xs font-medium">Timezone</FieldLabel>
-          <select
-            id="profile_timezone"
+          <Select
+            items={timezoneItems}
             value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
+            onValueChange={(val) => {
+              if (val) setTimezone(val);
+            }}
             disabled={isSubmitting}
-            className="h-8.5 w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
           >
-            {!COMMON_TIMEZONES.includes(timezone) && timezone && (
-              <option value={timezone}>{timezone} (Auto-Detected)</option>
-            )}
-            {COMMON_TIMEZONES.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8.5 w-full bg-background text-xs font-medium">
+              <SelectValue placeholder="Select Timezone" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {timezoneItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <FieldDescription className="text-[11px] text-muted-foreground">
             Used for schedule timetable and reminder notifications.
           </FieldDescription>

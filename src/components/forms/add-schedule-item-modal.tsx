@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Schedule, ScheduleItem, DayOfWeek } from "@/types/schedule";
 import { Category } from "@/types/category";
 
@@ -13,6 +14,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Repeat, X, Loader2, AlertTriangle, Clock } from "lucide-react";
 
 const DAY_CODES: { code: DayOfWeek; label: string }[] = [
@@ -41,6 +49,7 @@ export function AddScheduleItemModal({
   categories,
   onScheduleItemCreated,
 }: AddScheduleItemModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [schedItemTitle, setSchedItemTitle] = useState("");
   const [schedSelectedDays, setSchedSelectedDays] = useState<DayOfWeek[]>(["MON", "WED", "FRI"]);
@@ -52,6 +61,19 @@ export function AddScheduleItemModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [conflictWarnings, setConflictWarnings] = useState<ScheduleConflict[]>([]);
 
+  const scheduleSelectItems = React.useMemo(() => [
+    ...schedules.map((s) => ({ label: s.title, value: s.id })),
+  ], [schedules]);
+
+  const categorySelectItems = React.useMemo(() => [
+    { label: "No Category", value: "none" },
+    ...categories.map((c) => ({ label: c.name, value: c.id })),
+  ], [categories]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (schedules.length > 0) {
       if (!selectedScheduleId || !schedules.some((s) => s.id === selectedScheduleId)) {
@@ -62,7 +84,7 @@ export function AddScheduleItemModal({
     }
   }, [schedules, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const toggleSchedDay = (day: DayOfWeek) => {
     setSchedSelectedDays((prev) =>
@@ -128,12 +150,12 @@ export function AddScheduleItemModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="add_sched_item_title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
     >
       {/* Backdrop */}
       <div
@@ -152,11 +174,18 @@ export function AddScheduleItemModal({
           <X className="size-4" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <Repeat className="size-4 opacity-70" />
-          <h3 id="add_sched_item_title" className="text-sm font-semibold text-foreground">
-            Add Routine Item
-          </h3>
+        <div className="flex items-center gap-2.5">
+          <div className="size-7 rounded-md bg-muted text-foreground flex items-center justify-center">
+            <Repeat className="size-3.5" />
+          </div>
+          <div>
+            <h3 id="add_sched_item_title" className="text-sm font-semibold text-foreground">
+              New Routine
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Add a recurring routine block to your schedule.
+            </p>
+          </div>
         </div>
 
         {formError && (
@@ -168,8 +197,8 @@ export function AddScheduleItemModal({
         {conflictWarnings.length > 0 && (
           <div role="alert" className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-3.5" />
-              <span>Schedule Conflict — overlapping times detected</span>
+              <AlertTriangle className="size-3.5 shrink-0" />
+              <span>Schedule Conflict — overlapping times</span>
             </div>
             <div className="space-y-1">
               {conflictWarnings.map((c) => (
@@ -197,39 +226,42 @@ export function AddScheduleItemModal({
 
         <form onSubmit={handleSubmit} className="space-y-3 text-left">
           <div className="space-y-1">
-            <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
+            <label htmlFor="modal_sched_select" className="text-xs font-medium text-foreground">
               Target Schedule
             </label>
-            <select
-              id="sched_select"
+            <Select
+              items={scheduleSelectItems}
               value={selectedScheduleId}
-              onChange={(e) => setSelectedScheduleId(e.target.value)}
-              required
-              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+              onValueChange={(val) => {
+                if (val) setSelectedScheduleId(val);
+              }}
+              disabled={schedules.length === 0}
             >
-              {schedules.length === 0 ? (
-                <option value="">No schedules available. Create one first!</option>
-              ) : (
-                schedules.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                  </option>
-                ))
-              )}
-            </select>
+              <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
+                <SelectValue placeholder={schedules.length === 0 ? "No schedules available" : "Select schedule"} />
+              </SelectTrigger>
+              <SelectContent>
+                {scheduleSelectItems.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="sched_item_title" className="text-xs font-medium text-foreground">
+            <label htmlFor="modal_sched_item_title" className="text-xs font-medium text-foreground">
               Routine Title
             </label>
             <Input
-              id="sched_item_title"
+              id="modal_sched_item_title"
               type="text"
-              placeholder="e.g. Morning Standup, Daily Workout"
+              placeholder="e.g. Deep Work, Gym Session"
               value={schedItemTitle}
               onChange={(e) => setSchedItemTitle(e.target.value)}
               required
+              autoFocus
               className="h-8 rounded-md"
             />
           </div>
@@ -264,11 +296,11 @@ export function AddScheduleItemModal({
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label htmlFor="sched_start" className="text-xs font-medium text-foreground">
+              <label htmlFor="modal_sched_start" className="text-xs font-medium text-foreground">
                 Start Time
               </label>
               <Input
-                id="sched_start"
+                id="modal_sched_start"
                 type="time"
                 value={schedStartTime}
                 onChange={(e) => setSchedStartTime(e.target.value)}
@@ -278,11 +310,11 @@ export function AddScheduleItemModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="sched_end" className="text-xs font-medium text-foreground">
+              <label htmlFor="modal_sched_end" className="text-xs font-medium text-foreground">
                 End Time
               </label>
               <Input
-                id="sched_end"
+                id="modal_sched_end"
                 type="time"
                 value={schedEndTime}
                 onChange={(e) => setSchedEndTime(e.target.value)}
@@ -294,22 +326,25 @@ export function AddScheduleItemModal({
 
           {categories.length > 0 && (
             <div className="space-y-1">
-              <label htmlFor="sched_cat" className="text-xs font-medium text-foreground">
+              <label htmlFor="modal_sched_cat" className="text-xs font-medium text-foreground">
                 Category
               </label>
-              <select
-                id="sched_cat"
-                value={schedCategoryId}
-                onChange={(e) => setSchedCategoryId(e.target.value)}
-                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+              <Select
+                items={categorySelectItems}
+                value={schedCategoryId || "none"}
+                onValueChange={(val) => setSchedCategoryId(val === "none" ? "" : (val || ""))}
               >
-                <option value="">No Category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
+                  <SelectValue placeholder="No Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categorySelectItems.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -342,7 +377,8 @@ export function AddScheduleItemModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

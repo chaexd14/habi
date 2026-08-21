@@ -5,7 +5,24 @@ import createClient from "@/lib/supabase/client";
 import type { Profile, ProfileFormData } from "@/types/profile";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, CheckCircle2, User, Globe } from "lucide-react";
+
+const TIMEZONE_ITEMS = [
+  { label: "Asia/Manila", value: "Asia/Manila" },
+  { label: "Asia/Tokyo", value: "Asia/Tokyo" },
+  { label: "Asia/Singapore", value: "Asia/Singapore" },
+  { label: "America/New_York", value: "America/New_York" },
+  { label: "America/Los_Angeles", value: "America/Los_Angeles" },
+  { label: "Europe/London", value: "Europe/London" },
+  { label: "UTC", value: "UTC" },
+];
 
 export default function ProfileForm() {
   const supabase = createClient();
@@ -139,20 +156,25 @@ export default function ProfileForm() {
           <Globe className="size-3.5 text-muted-foreground" />
           Timezone
         </label>
-        <select
-          id="timezone"
+        <Select
+          items={TIMEZONE_ITEMS}
           value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="h-8.5 w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+          onValueChange={(val) => {
+            if (val) setTimezone(val);
+          }}
+          disabled={loading}
         >
-          <option value="Asia/Manila">Asia/Manila</option>
-          <option value="Asia/Tokyo">Asia/Tokyo</option>
-          <option value="Asia/Singapore">Asia/Singapore</option>
-          <option value="America/New_York">America/New_York</option>
-          <option value="America/Los_Angeles">America/Los_Angeles</option>
-          <option value="Europe/London">Europe/London</option>
-          <option value="UTC">UTC</option>
-        </select>
+          <SelectTrigger className="h-8.5 w-full bg-background text-xs font-medium">
+            <SelectValue placeholder="Select Timezone" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {TIMEZONE_ITEMS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="pt-2">

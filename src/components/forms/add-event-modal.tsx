@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { CalendarItem } from "@/types/calendar-item";
 import { Schedule, ScheduleItem, DayOfWeek } from "@/types/schedule";
 import { Category } from "@/types/category";
@@ -11,6 +12,14 @@ import { createScheduleItemApi, ScheduleConflictError, ScheduleConflict } from "
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock } from "lucide-react";
 
 export type FormType = "calendar_item" | "schedule_item";
@@ -46,6 +55,7 @@ export function AddEventModal({
   onCalendarItemCreated,
   onScheduleItemCreated,
 }: AddEventModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [formType, setFormType] = useState<FormType>("calendar_item");
 
   // Calendar Event Form
@@ -68,6 +78,19 @@ export function AddEventModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [conflictWarnings, setConflictWarnings] = useState<ScheduleConflict[]>([]);
 
+  const categorySelectItems = React.useMemo(() => [
+    { label: "No Category", value: "none" },
+    ...categories.map((c) => ({ label: c.name, value: c.id })),
+  ], [categories]);
+
+  const scheduleSelectItems = React.useMemo(() => [
+    ...schedules.map((s) => ({ label: s.title, value: s.id })),
+  ], [schedules]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (schedules.length > 0) {
       if (!selectedScheduleId || !schedules.some((s) => s.id === selectedScheduleId)) {
@@ -78,7 +101,7 @@ export function AddEventModal({
     }
   }, [schedules, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const toggleSchedDay = (day: DayOfWeek) => {
     setSchedSelectedDays((prev) =>
@@ -173,12 +196,12 @@ export function AddEventModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="add_event_title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
     >
       {/* Backdrop */}
       <div
@@ -296,13 +319,10 @@ export function AddEventModal({
                 <label htmlFor="event_day" className="text-xs font-medium text-foreground">
                   Date
                 </label>
-                <Input
+                <DatePicker
                   id="event_day"
-                  type="date"
-                  value={eventDay}
-                  onChange={(e) => setEventDay(e.target.value)}
-                  required
-                  className="h-8 rounded-md"
+                  date={eventDay}
+                  onDateChange={(d) => setEventDay(d)}
                 />
               </div>
 
@@ -353,19 +373,22 @@ export function AddEventModal({
                   <label htmlFor="event_cat" className="text-xs font-medium text-foreground">
                     Category
                   </label>
-                  <select
-                    id="event_cat"
-                    value={eventCategoryId}
-                    onChange={(e) => setEventCategoryId(e.target.value)}
-                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                  <Select
+                    items={categorySelectItems}
+                    value={eventCategoryId || "none"}
+                    onValueChange={(val) => setEventCategoryId(val === "none" ? "" : (val || ""))}
                   >
-                    <option value="">No Category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
+                      <SelectValue placeholder="No Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categorySelectItems.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </>
@@ -375,22 +398,25 @@ export function AddEventModal({
                 <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
                   Target Schedule
                 </label>
-                <select
-                  id="sched_select"
+                <Select
+                  items={scheduleSelectItems}
                   value={selectedScheduleId}
-                  onChange={(e) => setSelectedScheduleId(e.target.value)}
-                  className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                  onValueChange={(val) => {
+                    if (val) setSelectedScheduleId(val);
+                  }}
+                  disabled={schedules.length === 0}
                 >
-                  {schedules.length === 0 ? (
-                    <option value="">No schedules available. Create one first!</option>
-                  ) : (
-                    schedules.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
+                    <SelectValue placeholder={schedules.length === 0 ? "No schedules available" : "Select schedule"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scheduleSelectItems.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
@@ -400,7 +426,7 @@ export function AddEventModal({
                 <Input
                   id="sched_item_title"
                   type="text"
-                  placeholder="e.g. Morning Workout, Deep Work"
+                  placeholder="e.g. Team Standup, Deep Work"
                   value={schedItemTitle}
                   onChange={(e) => setSchedItemTitle(e.target.value)}
                   required
@@ -471,19 +497,22 @@ export function AddEventModal({
                   <label htmlFor="sched_cat" className="text-xs font-medium text-foreground">
                     Category
                   </label>
-                  <select
-                    id="sched_cat"
-                    value={schedCategoryId}
-                    onChange={(e) => setSchedCategoryId(e.target.value)}
-                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium shadow-2xs outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                  <Select
+                    items={categorySelectItems}
+                    value={schedCategoryId || "none"}
+                    onValueChange={(val) => setSchedCategoryId(val === "none" ? "" : (val || ""))}
                   >
-                    <option value="">No Category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
+                      <SelectValue placeholder="No Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categorySelectItems.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </>
@@ -518,7 +547,8 @@ export function AddEventModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

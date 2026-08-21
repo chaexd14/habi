@@ -80,6 +80,36 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   const body: UpdateProfileInput = await request.json();
 
+  // If username is being updated, check if it is taken by another profile
+  if (body.user_name) {
+    const { data: userExists, error: userExistsError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_name", body.user_name)
+      .neq("id", id)
+      .maybeSingle();
+
+    if (userExistsError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: userExistsError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (userExists) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Username already exists. Please choose a different username.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const { data, error } = await supabase
     .from("profiles")
     .update(body)
