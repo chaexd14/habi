@@ -159,12 +159,14 @@ export function DashboardCalendar() {
   // URL Query String State
   const urlTypeParam = (searchParams.get("type") as SourceFilter) || "all";
   const urlScheduleIdParam = searchParams.get("scheduleId") || "ALL";
+  const urlCategoryIdParam = searchParams.get("categoryId") || "ALL";
   const urlDateParam = searchParams.get("date");
 
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(
     ["all", "calendar", "schedule"].includes(urlTypeParam) ? urlTypeParam : "all"
   );
   const [selectedScheduleFilter, setSelectedScheduleFilter] = useState<string>(urlScheduleIdParam);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>(urlCategoryIdParam);
 
   useEffect(() => {
     if (["all", "calendar", "schedule"].includes(urlTypeParam)) {
@@ -181,6 +183,10 @@ export function DashboardCalendar() {
   useEffect(() => {
     setSelectedScheduleFilter(urlScheduleIdParam);
   }, [urlScheduleIdParam]);
+
+  useEffect(() => {
+    setSelectedCategoryFilter(urlCategoryIdParam);
+  }, [urlCategoryIdParam]);
 
   useEffect(() => {
     if (urlDateParam) {
@@ -293,6 +299,9 @@ export function DashboardCalendar() {
 
       if (sourceFilter === "all" || sourceFilter === "calendar") {
         calendarItems.forEach((cItem) => {
+          if (selectedCategoryFilter !== "ALL" && cItem.category_id !== selectedCategoryFilter) {
+            return;
+          }
           if (cItem.day === iso) {
             result.push({
               id: `cal-${cItem.id}`,
@@ -312,6 +321,9 @@ export function DashboardCalendar() {
       if (sourceFilter === "all" || sourceFilter === "schedule") {
         scheduleItems.forEach((sItem) => {
           if (selectedScheduleFilter !== "ALL" && sItem.schedule_id !== selectedScheduleFilter) {
+            return;
+          }
+          if (selectedCategoryFilter !== "ALL" && sItem.category_id !== selectedCategoryFilter) {
             return;
           }
 
@@ -335,7 +347,7 @@ export function DashboardCalendar() {
 
       return result;
     },
-    [calendarItems, scheduleItems, scheduleMap, sourceFilter, selectedScheduleFilter]
+    [calendarItems, scheduleItems, scheduleMap, sourceFilter, selectedScheduleFilter, selectedCategoryFilter]
   );
 
   // Month Grid Days

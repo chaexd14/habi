@@ -50,7 +50,7 @@ function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={currentType === "all"}
-                render={<Link href="/dashboard?type=all" />}
+                render={<Link href={`/dashboard?${new URLSearchParams({ ...Object.fromEntries(searchParams.entries()), type: "all" }).toString()}`} />}
                 className="h-8 text-xs font-medium rounded-md px-2.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
               >
                 <Layers className="size-3.5 opacity-70" />
@@ -61,7 +61,7 @@ function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={currentType === "calendar"}
-                render={<Link href="/dashboard?type=calendar" />}
+                render={<Link href={`/dashboard?${new URLSearchParams({ ...Object.fromEntries(searchParams.entries()), type: "calendar" }).toString()}`} />}
                 className="h-8 text-xs font-medium rounded-md px-2.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
               >
                 <CalendarDays className="size-3.5 opacity-70" />
@@ -72,7 +72,7 @@ function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={currentType === "schedule"}
-                render={<Link href="/dashboard?type=schedule" />}
+                render={<Link href={`/dashboard?${new URLSearchParams({ ...Object.fromEntries(searchParams.entries()), type: "schedule" }).toString()}`} />}
                 className="h-8 text-xs font-medium rounded-md px-2.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
               >
                 <Repeat className="size-3.5 opacity-70" />

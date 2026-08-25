@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Category } from "@/types/category";
 import { getCategories } from "@/lib/api/category";
 import {
@@ -37,10 +38,30 @@ export function NavCategory({
   className,
   ...props
 }: NavCategoryProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [categories, setCategories] = useState<Category[]>(initialCategories || []);
   const [loading, setLoading] = useState(!initialCategories);
   const [error, setError] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+
+  const currentCategoryId = searchParams.get("categoryId") || activeCategoryId || "";
+
+  const handleSelectCategory = (category: Category) => {
+    if (onSelectCategory) {
+      onSelectCategory(category);
+    }
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (currentCategoryId === category.id) {
+      params.delete("categoryId");
+    } else {
+      params.set("categoryId", category.id);
+    }
+
+    router.push(`/dashboard?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (initialCategories) {
@@ -127,13 +148,13 @@ export function NavCategory({
               ) : (
                 <SidebarMenu className="space-y-0.5">
                   {categories.map((category) => {
-                    const isActive = activeCategoryId === category.id;
+                    const isActive = currentCategoryId === category.id;
                     return (
                       <SidebarMenuItem key={category.id}>
                         <SidebarMenuButton
                           size="sm"
                           isActive={isActive}
-                          onClick={() => onSelectCategory?.(category)}
+                          onClick={() => handleSelectCategory(category)}
                           className="group/cat flex items-center justify-between rounded-md h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
                         >
                           <div className="flex items-center gap-2 min-w-0">

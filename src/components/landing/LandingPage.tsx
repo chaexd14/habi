@@ -131,7 +131,7 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="py-8 border-t border-border/40 bg-background flex flex-col sm:flex-row items-center justify-between px-6 lg:px-14">
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Habi. All rights reserved.
+          © 2026 Habi. All rights reserved.
         </p>
         <div className="flex gap-6 mt-4 sm:mt-0 text-sm font-medium text-muted-foreground">
           <Link href="#" className="hover:text-foreground transition-colors">Privacy</Link>
