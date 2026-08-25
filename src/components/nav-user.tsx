@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { ProfileSettingsModal } from "@/components/user-profile/profile-settings-modal";
 import { NotificationSheet } from "@/components/notifications/notification-sheet";
 import { useNotifications } from "@/providers/notification-provider";
+import { clearSessionRecord } from "@/lib/auth/session";
 
 export function NavUserSkeleton() {
   return (
@@ -53,6 +54,7 @@ export function NavUser({ userProfile }: { userProfile: UserProfile }) {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      clearSessionRecord(true);
       if (typeof window !== "undefined") {
         sessionStorage.clear();
       }

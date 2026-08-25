@@ -129,19 +129,19 @@ export function ProfileSettingsModal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !mounted) return null;
-
-  const isChanged =
-    userName.trim() !== userProfile.user_name ||
-    avatarUrl !== userProfile.avatar_url ||
-    timezone !== userProfile.timezone;
-
   const timezoneItems = React.useMemo(() => [
     ...(!COMMON_TIMEZONES.includes(timezone) && timezone
       ? [{ label: `${timezone} (Custom / Local)`, value: timezone }]
       : []),
     ...COMMON_TIMEZONES.map((tz) => ({ label: tz, value: tz })),
   ], [timezone]);
+
+  if (!isOpen || !mounted) return null;
+
+  const isChanged =
+    userName.trim() !== userProfile.user_name ||
+    avatarUrl !== userProfile.avatar_url ||
+    timezone !== userProfile.timezone;
 
   const initials = userName
     ? userName.slice(0, 2).toUpperCase()

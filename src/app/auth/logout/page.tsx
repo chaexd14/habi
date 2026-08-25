@@ -4,6 +4,7 @@ import React from 'react'
 import createClient from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { clearSessionRecord } from '@/lib/auth/session';
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -11,6 +12,10 @@ export default function LogoutPage() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    clearSessionRecord(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.clear();
+    }
 
     router.push("/auth/login");
     router.refresh();

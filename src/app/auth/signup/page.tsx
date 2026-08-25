@@ -11,6 +11,7 @@ import Image from "next/image";
 import { SignupForm } from "@/components/auth/signup-form";
 import { CreateUserProfile } from "@/components/user-profile/create-user-profile";
 import { ProfileProvider } from "@/providers/profile-provider";
+import { recordSessionStart } from "@/lib/auth/session";
 import { Check, User, ShieldCheck } from "lucide-react";
 
 export default function SignupPage() {
@@ -72,6 +73,9 @@ export default function SignupPage() {
         return;
       }
 
+      // Initialize 8-hour session lifetime
+      recordSessionStart(Date.now());
+
       // Proceed directly to Step 2: Create Profile
       setStep(2);
     } catch (error) {
@@ -85,6 +89,7 @@ export default function SignupPage() {
   }
 
   const handleProfileSuccess = () => {
+    recordSessionStart(Date.now());
     router.replace("/dashboard");
   };
 

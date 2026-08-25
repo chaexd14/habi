@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import createClient from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { LoginCredentials } from "@/types/auth";
 import { LoginSchema } from "@/lib/validations/auth";
+import { recordSessionStart } from "@/lib/auth/session";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +16,12 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight, Clock } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isExpired = searchParams.get("expired") === "1" || searchParams.get("expired") === "true";
   const supabase = createClient();
 
   const [email, setEmail] = useState<LoginCredentials["email"]>("");
@@ -61,6 +64,9 @@ export default function LoginPage() {
         return;
       }
 
+      // Initialize 8-hour session lifetime
+      recordSessionStart(Date.now());
+
       router.replace("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -70,6 +76,111 @@ export default function LoginPage() {
     }
   }
 
+  return (
+    <div className="w-full max-w-sm space-y-5">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+        <p className="text-xs text-muted-foreground">
+          Sign in to your schedules, calendars, and routines.
+        </p>
+      </div>
+
+      {isExpired && (
+        <div
+          role="status"
+          className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-start gap-2.5"
+        >
+          <Clock className="size-4 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-semibold">Session expired</p>
+            <p className="text-[11px] opacity-90">
+              For security, you have been automatically logged out after 8 hours. Please sign in again.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleLogin} className="space-y-3.5">
+        <FieldGroup className="space-y-3.5">
+          {errors.form && (
+            <div
+              role="alert"
+              aria-live="polite"
+              className="rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium flex items-center gap-2"
+            >
+              <AlertCircle className="size-3.5 shrink-0" />
+              <span>{errors.form}</span>
+            </div>
+          )}
+
+          <Field>
+            <FieldLabel htmlFor="email" className="text-xs font-medium">Email address</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+              className="h-8.5 rounded-md"
+              aria-invalid={!!errors.email?.length}
+            />
+            {errors.email?.length && (
+              <FieldError errors={errors.email.map((msg) => ({ message: msg }))} />
+            )}
+          </Field>
+
+          <Field>
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor="password" className="text-xs font-medium">Password</FieldLabel>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+              className="h-8.5 rounded-md"
+              aria-invalid={!!errors.password?.length}
+            />
+            {errors.password?.length && (
+              <FieldError errors={errors.password.map((msg) => ({ message: msg }))} />
+            )}
+          </Field>
+
+          <Field className="pt-1">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-8.5 w-full font-medium text-xs rounded-md shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="size-3.5" />
+                </>
+              )}
+            </Button>
+          </Field>
+        </FieldGroup>
+      </form>
+    </div>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div className="min-h-svh bg-background lg:grid lg:grid-cols-2">
       {/* Left Section: Login Form */}
@@ -90,91 +201,9 @@ export default function LoginPage() {
 
         {/* Main Content */}
         <div className="flex items-center justify-center py-8">
-          <div className="w-full max-w-sm space-y-5">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Welcome back
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Sign in to your schedules, calendars, and routines.
-              </p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-3.5">
-              <FieldGroup className="space-y-3.5">
-                {errors.form && (
-                  <div
-                    role="alert"
-                    aria-live="polite"
-                    className="rounded-md bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium flex items-center gap-2"
-                  >
-                    <AlertCircle className="size-3.5 shrink-0" />
-                    <span>{errors.form}</span>
-                  </div>
-                )}
-
-                <Field>
-                  <FieldLabel htmlFor="email" className="text-xs font-medium">Email address</FieldLabel>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                    required
-                    className="h-8.5 rounded-md"
-                    aria-invalid={!!errors.email?.length}
-                  />
-                  {errors.email?.length && (
-                    <FieldError errors={errors.email.map((msg) => ({ message: msg }))} />
-                  )}
-                </Field>
-
-                <Field>
-                  <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor="password" className="text-xs font-medium">Password</FieldLabel>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                    required
-                    className="h-8.5 rounded-md"
-                    aria-invalid={!!errors.password?.length}
-                  />
-                  {errors.password?.length && (
-                    <FieldError errors={errors.password.map((msg) => ({ message: msg }))} />
-                  )}
-                </Field>
-
-                <Field className="pt-1">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="h-8.5 w-full font-medium text-xs rounded-md shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="size-3.5 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      <>
-                        <span>Sign In</span>
-                        <ArrowRight className="size-3.5" />
-                      </>
-                    )}
-                  </Button>
-                </Field>
-              </FieldGroup>
-            </form>
-          </div>
+          <Suspense fallback={<div className="w-full max-w-sm space-y-5 animate-pulse" />}>
+            <LoginForm />
+          </Suspense>
         </div>
 
         {/* Footer */}
