@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith("/auth/login") || pathname.startsWith("/auth/signup");
-  const isProtectedRoute = pathname.startsWith("/dashboard") || pathname === "/";
+  const isProtectedRoute = pathname.startsWith("/dashboard");
   const isApiRoute = pathname.startsWith("/api");
 
   const sessionStartCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
