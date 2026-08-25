@@ -8,6 +8,7 @@ import { useProfile } from "@/providers/profile-provider";
 import { UpdateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
 import { uploadAvatarFile } from "@/lib/supabase/storage";
 import type { UserProfile } from "@/types/profile";
+import createClient from "@/lib/supabase/client";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RotateCcw,
+  Key,
 } from "lucide-react";
 
 export interface ProfileSettingsModalProps {
@@ -86,6 +88,8 @@ export function ProfileSettingsModal({
   const [userName, setUserName] = useState(userProfile.user_name || "");
   const [avatarUrl, setAvatarUrl] = useState(userProfile.avatar_url || PRESET_AVATARS[0]);
   const [timezone, setTimezone] = useState(userProfile.timezone || "UTC");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Interaction & status states
   const [isUploading, setIsUploading] = useState(false);
@@ -104,6 +108,8 @@ export function ProfileSettingsModal({
       setUserName(userProfile.user_name || "");
       setAvatarUrl(userProfile.avatar_url || PRESET_AVATARS[0]);
       setTimezone(userProfile.timezone || "UTC");
+      setNewPassword("");
+      setConfirmPassword("");
       setFormError(null);
       setSuccessMessage(null);
       setFieldErrors({});
@@ -141,7 +147,9 @@ export function ProfileSettingsModal({
   const isChanged =
     userName.trim() !== userProfile.user_name ||
     avatarUrl !== userProfile.avatar_url ||
-    timezone !== userProfile.timezone;
+    timezone !== userProfile.timezone ||
+    newPassword.length > 0 ||
+    confirmPassword.length > 0;
 
   const initials = userName
     ? userName.slice(0, 2).toUpperCase()
@@ -196,6 +204,8 @@ export function ProfileSettingsModal({
     setUserName(userProfile.user_name || "");
     setAvatarUrl(userProfile.avatar_url || PRESET_AVATARS[0]);
     setTimezone(userProfile.timezone || "UTC");
+    setNewPassword("");
+    setConfirmPassword("");
     setFormError(null);
     setFieldErrors({});
   };
@@ -206,6 +216,17 @@ export function ProfileSettingsModal({
     setFormError(null);
     setSuccessMessage(null);
     setFieldErrors({});
+
+    if (newPassword || confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        setFieldErrors({ confirmPassword: "Passwords do not match." });
+        return;
+      }
+      if (newPassword.length < 6) {
+        setFieldErrors({ newPassword: "Password must be at least 6 characters long." });
+        return;
+      }
+    }
 
     const formData: UpdateProfileInput = {
       user_name: userName.trim(),
@@ -228,6 +249,12 @@ export function ProfileSettingsModal({
     setIsSubmitting(true);
 
     try {
+      if (newPassword) {
+        const supabase = createClient();
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+      }
+
       await updateProfile(userProfile.id, formData);
       setSuccessMessage("Profile updated successfully!");
 
@@ -524,8 +551,60 @@ export function ProfileSettingsModal({
               </FieldDescription>
             </Field>
 
+            {/* Change Password Section */}
+            <div className="pt-2 border-t border-border mt-2 space-y-4">
+              <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Key className="size-3.5 opacity-70" />
+                Change Password
+              </h3>
+              
+              <Field className="space-y-1">
+                <FieldLabel
+                  htmlFor="profile_edit_new_password"
+                  className="text-xs font-medium text-foreground"
+                >
+                  New Password
+                </FieldLabel>
+                <Input
+                  id="profile_edit_new_password"
+                  type="password"
+                  placeholder="Leave blank to keep current"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  className="h-8.5 rounded-md text-xs"
+                  aria-invalid={!!fieldErrors.newPassword}
+                />
+                {fieldErrors.newPassword && (
+                  <FieldError errors={[{ message: fieldErrors.newPassword }]} />
+                )}
+              </Field>
+
+              <Field className="space-y-1">
+                <FieldLabel
+                  htmlFor="profile_edit_confirm_password"
+                  className="text-xs font-medium text-foreground"
+                >
+                  Confirm New Password
+                </FieldLabel>
+                <Input
+                  id="profile_edit_confirm_password"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  className="h-8.5 rounded-md text-xs"
+                  aria-invalid={!!fieldErrors.confirmPassword}
+                />
+                {fieldErrors.confirmPassword && (
+                  <FieldError errors={[{ message: fieldErrors.confirmPassword }]} />
+                )}
+              </Field>
+            </div>
+
             {/* Account Metadata Card */}
-            <div className="rounded-lg bg-muted/40 border border-border/80 p-3 space-y-1.5">
+            <div className="rounded-lg bg-muted/40 border border-border/80 p-3 space-y-1.5 mt-2">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-muted-foreground">Account ID</span>
                 <span className="font-mono text-foreground font-medium text-[10px] bg-background px-1.5 py-0.5 rounded border border-border">
