@@ -9,6 +9,7 @@ import { CalendarItem } from "@/types/calendar-item";
 import { Schedule, ScheduleItem } from "@/types/schedule";
 import { evaluateNotifications } from "@/lib/utils/notification-checker";
 import { useProfile } from "@/providers/profile-provider";
+import { useSettings } from "@/providers/settings-provider";
 
 const STORAGE_KEY = "habi_notifications_v1";
 const NOTIFIED_KEYS_STORAGE_KEY = "habi_notified_keys_v1";
@@ -41,6 +42,7 @@ const NotificationContext = createContext<NotificationContextType>({
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { userProfile } = useProfile();
+  const { settings } = useSettings();
   
   // Lazy state initialization
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -139,7 +141,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         schedItems,
         scheds,
         notifiedKeysRef.current,
-        new Date()
+        new Date(),
+        settings.notificationAlert,
+        settings.timeFormat
       );
 
       if (result.newNotifications.length > 0) {
@@ -191,7 +195,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
       }
     },
-    [triggerToast]
+    [triggerToast, settings.notificationAlert, settings.timeFormat]
   );
 
   // Fetch data and evaluate

@@ -19,13 +19,11 @@ import {
   Clock,
   Zap,
   Volume2,
-  BellOff,
   Inbox,
-  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationType } from "@/types/notification";
-import { formatTime12h } from "@/lib/utils/notification-checker";
+import { useSettings } from "@/providers/settings-provider";
 
 export interface NotificationSheetProps {
   open: boolean;
@@ -45,7 +43,7 @@ function getNotificationBadge(type: NotificationType) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
           <Clock className="size-2.5" />
-          30m
+          Alert
         </span>
       );
     case "today_summary":
@@ -59,6 +57,7 @@ function getNotificationBadge(type: NotificationType) {
 }
 
 export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps) {
+  const { formatTime } = useSettings();
   const {
     notifications,
     unreadCount,
@@ -261,7 +260,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                           <span className="truncate font-medium">• {sub.title}</span>
                           {sub.startTime && (
                             <span className="text-[10px] text-muted-foreground font-mono ml-2 shrink-0 bg-background px-1.5 py-0.5 rounded border border-border/50">
-                              {formatTime12h(sub.startTime)}
+                              {formatTime(sub.startTime)}
                             </span>
                           )}
                         </div>

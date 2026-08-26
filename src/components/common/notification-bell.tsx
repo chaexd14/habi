@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationType } from "@/types/notification";
-import { formatTime12h } from "@/lib/utils/notification-checker";
+import { useSettings } from "@/providers/settings-provider";
 
 function getNotificationBadge(type: NotificationType) {
   switch (type) {
@@ -36,7 +36,7 @@ function getNotificationBadge(type: NotificationType) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-foreground border border-border shrink-0">
           <Clock className="size-2.5" />
-          30m
+          Alert
         </span>
       );
     case "today_summary":
@@ -50,6 +50,7 @@ function getNotificationBadge(type: NotificationType) {
 }
 
 export function NotificationBell() {
+  const { formatTime } = useSettings();
   const {
     notifications,
     unreadCount,
@@ -235,7 +236,7 @@ export function NotificationBell() {
                             <span className="truncate">• {sub.title}</span>
                             {sub.startTime && (
                               <span className="text-[10px] text-muted-foreground font-mono ml-2 shrink-0">
-                                {formatTime12h(sub.startTime)}
+                                {formatTime(sub.startTime)}
                               </span>
                             )}
                           </div>

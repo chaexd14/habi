@@ -21,6 +21,7 @@ import { CalendarDayView } from "./calendar-day-view";
 import { AddEventModal } from "@/components/forms/add-event-modal";
 import { AddScheduleModal } from "@/components/forms/add-schedule-modal";
 import { EditEventModal, RenderEvent } from "@/components/forms/edit-event-modal";
+import { useSettings } from "@/providers/settings-provider";
 
 const DAY_MAP: Record<number, DayOfWeek> = {
   0: "SUN",
@@ -49,36 +50,6 @@ function parseTimeToHours(timeStr?: string | null): number | null {
   const m = parseInt(parts[1], 10);
   if (isNaN(h) || isNaN(m)) return null;
   return h + m / 60;
-}
-
-function format12h(hourFloatOrStr?: number | string | null): string {
-  if (hourFloatOrStr === null || hourFloatOrStr === undefined) return "";
-
-  let h = 0;
-  let m = 0;
-
-  if (typeof hourFloatOrStr === "string") {
-    const parts = hourFloatOrStr.split(":");
-    if (parts.length >= 2) {
-      h = parseInt(parts[0], 10);
-      m = parseInt(parts[1], 10);
-    } else {
-      return hourFloatOrStr;
-    }
-  } else {
-    h = Math.floor(hourFloatOrStr);
-    m = Math.round((hourFloatOrStr - Math.floor(hourFloatOrStr)) * 60);
-  }
-
-  if (isNaN(h)) return "";
-  if (isNaN(m)) m = 0;
-
-  const displayH = h % 24;
-  const period = displayH >= 12 ? "PM" : "AM";
-  const h12 = displayH % 12 === 0 ? 12 : displayH % 12;
-  const padM = m.toString().padStart(2, "0");
-
-  return `${h12}:${padM} ${period}`;
 }
 
 function parseEndTimeToHours(endTimeStr?: string | null, startTimeStr?: string | null): number | null {
@@ -213,6 +184,7 @@ export function DashboardCalendar() {
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RenderEvent | null>(null);
+  const { formatTime } = useSettings();
 
   useEffect(() => {
     setMounted(true);
@@ -413,10 +385,10 @@ export function DashboardCalendar() {
   const timelineHours = useMemo(() => {
     const list: string[] = [];
     for (let h = dynamicHourRange.minHour; h <= dynamicHourRange.maxHour; h++) {
-      list.push(format12h(h));
+      list.push(formatTime(h));
     }
     return list;
-  }, [dynamicHourRange]);
+  }, [dynamicHourRange, formatTime]);
 
   const hourHeight = useMemo(() => {
     return Math.round(BASE_HOUR_HEIGHT * (zoomLevel / 100));
@@ -540,7 +512,7 @@ export function DashboardCalendar() {
             categoryMap={categoryMap}
             getIsoDateString={getIsoDateString}
             parseTimeToHours={parseTimeToHours}
-            format12h={format12h}
+            format12h={formatTime}
             onItemClick={handleItemClick}
           />
         ) : (
@@ -552,7 +524,7 @@ export function DashboardCalendar() {
             getRenderEventsForDate={getRenderEventsForDate}
             categoryMap={categoryMap}
             parseTimeToHours={parseTimeToHours}
-            format12h={format12h}
+            format12h={formatTime}
             onItemClick={handleItemClick}
           />
         )}

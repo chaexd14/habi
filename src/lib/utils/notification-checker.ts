@@ -29,7 +29,10 @@ export function parseTimeToMinutes(timeStr?: string | null): number | null {
   return h * 60 + m;
 }
 
-export function formatTime12h(timeStr?: string | null): string {
+export function formatTimeByFormat(
+  timeStr?: string | null,
+  timeFormat: "12h" | "24h" = "12h"
+): string {
   if (!timeStr) return "";
   const parts = timeStr.split(":");
   if (parts.length < 2) return timeStr;
@@ -37,10 +40,20 @@ export function formatTime12h(timeStr?: string | null): string {
   const m = parseInt(parts[1], 10);
   if (isNaN(h) || isNaN(m)) return timeStr;
 
+  const padM = m.toString().padStart(2, "0");
+
+  if (timeFormat === "24h") {
+    const padH = (((h % 24) + 24) % 24).toString().padStart(2, "0");
+    return `${padH}:${padM}`;
+  }
+
   const period = h >= 12 ? "PM" : "AM";
   h = h % 12 === 0 ? 12 : h % 12;
-  const padM = m.toString().padStart(2, "0");
   return `${h}:${padM} ${period}`;
+}
+
+export function formatTime12h(timeStr?: string | null): string {
+  return formatTimeByFormat(timeStr, "12h");
 }
 
 export interface TodayItem {
@@ -115,7 +128,9 @@ export function evaluateNotifications(
   scheduleItems: ScheduleItem[],
   schedules: Schedule[] = [],
   alreadyNotifiedKeys: Set<string>,
-  nowDate: Date = new Date()
+  nowDate: Date = new Date(),
+  alertLeadMinutes: number = 30,
+  timeFormat: "12h" | "24h" = "12h"
 ): EvaluateNotificationsResult {
   const todayIso = getIsoDateString(nowDate);
   const updatedNotifiedKeys = new Set(alreadyNotifiedKeys);
@@ -128,7 +143,7 @@ export function evaluateNotifications(
     updatedNotifiedKeys.add(todaySummaryKey);
     if (todayItems.length > 0) {
       const itemNames = todayItems
-        .map((i) => (i.startTime ? `${i.title} (${formatTime12h(i.startTime)})` : i.title))
+        .map((i) => (i.startTime ? `${i.title} (${formatTimeByFormat(i.startTime, timeFormat)})` : i.title))
         .join(", ");
 
       newNotifications.push({
@@ -147,7 +162,7 @@ export function evaluateNotifications(
     }
   }
 
-  // 2. Check Upcoming (within 30 mins) & Happening Now for Today & Tomorrow
+  // 2. Check Upcoming (within alertLeadMinutes) & Happening Now for Today & Tomorrow
   const tomorrowDate = new Date(nowDate);
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
@@ -187,9 +202,9 @@ export function evaluateNotifications(
       const diffMs = startDateTime.getTime() - nowDate.getTime();
       const minutesUntilStart = Math.floor(diffMs / 60000);
 
-      // 2a. Upcoming 30 minutes before start time (e.g. 10:30 PM for 11:00 PM event)
-      const upcomingKey = `upcoming_30m_${item.eventType}_${item.id}_${iso}`;
-      if (minutesUntilStart >= 0 && minutesUntilStart <= 30) {
+      // 2a. Upcoming within alertLeadMinutes before start time (e.g. 10m, 15m, 30m, 60m)
+      const upcomingKey = `upcoming_${alertLeadMinutes}m_${item.eventType}_${item.id}_${iso}`;
+      if (minutesUntilStart >= 0 && minutesUntilStart <= alertLeadMinutes) {
         if (!updatedNotifiedKeys.has(upcomingKey)) {
           updatedNotifiedKeys.add(upcomingKey);
           const timeMsg =
@@ -200,7 +215,7 @@ export function evaluateNotifications(
             id: upcomingKey,
             type: "upcoming_30m",
             title: `Upcoming: ${item.title}`,
-            message: `Event ${timeMsg} at ${formatTime12h(item.startTime)}.`,
+            message: `Event ${timeMsg} at ${formatTimeByFormat(item.startTime, timeFormat)}.`,
             eventId: item.id,
             eventType: item.eventType,
             startTime: item.startTime,
@@ -216,12 +231,12 @@ export function evaluateNotifications(
       if (nowDate.getTime() >= startDateTime.getTime() && nowDate.getTime() <= endDateTime.getTime()) {
         if (!updatedNotifiedKeys.has(happeningKey)) {
           updatedNotifiedKeys.add(happeningKey);
-          const endStr = item.endTime ? ` until ${formatTime12h(item.endTime)}` : "";
+          const endStr = item.endTime ? ` until ${formatTimeByFormat(item.endTime, timeFormat)}` : "";
           newNotifications.push({
             id: happeningKey,
             type: "happening_now",
             title: `Happening Now: ${item.title}`,
-            message: `Scheduled from ${formatTime12h(item.startTime)}${endStr}.`,
+            message: `Scheduled from ${formatTimeByFormat(item.startTime, timeFormat)}${endStr}.`,
             eventId: item.id,
             eventType: item.eventType,
             startTime: item.startTime,

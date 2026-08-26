@@ -21,12 +21,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { ChevronsUpDown, BadgeCheck, Bell, LogOut } from "lucide-react";
+import { ChevronsUpDown, BadgeCheck, Bell, LogOut, Settings } from "lucide-react";
 import { UserProfile } from "@/types/profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import createClient from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { ProfileSettingsModal } from "@/components/user-profile/profile-settings-modal";
+import { SettingsModal } from "@/components/settings/settings-modal";
 import { NotificationSheet } from "@/components/notifications/notification-sheet";
 import { useNotifications } from "@/providers/notification-provider";
 import { clearSessionRecord } from "@/lib/auth/session";
@@ -48,6 +49,7 @@ export function NavUser({ userProfile }: { userProfile: UserProfile }) {
   const router = useRouter();
   const { unreadCount } = useNotifications();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -133,6 +135,13 @@ export function NavUser({ userProfile }: { userProfile: UserProfile }) {
                   <span>Profile Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="h-7.5 px-2 rounded-md text-xs font-medium cursor-pointer transition-colors"
+                >
+                  <Settings className="size-3.5 mr-2 text-muted-foreground" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() => setIsNotificationsOpen(true)}
                   className="h-7.5 px-2 rounded-md text-xs font-medium cursor-pointer transition-colors flex items-center justify-between"
                 >
@@ -164,6 +173,11 @@ export function NavUser({ userProfile }: { userProfile: UserProfile }) {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         userProfile={userProfile}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       <NotificationSheet
