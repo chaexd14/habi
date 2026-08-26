@@ -14,7 +14,7 @@ import { getCategories } from "@/lib/api/category";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { CalendarToolbar, ViewMode, SourceFilter } from "./calendar-toolbar";
+import { CalendarToolbar, ViewMode, SourceFilter, ZoomLevel, ZOOM_LEVELS } from "./calendar-toolbar";
 import { CalendarMonthView } from "./calendar-month-view";
 import { CalendarWeekView } from "./calendar-week-view";
 import { CalendarDayView } from "./calendar-day-view";
@@ -32,7 +32,7 @@ const DAY_MAP: Record<number, DayOfWeek> = {
   6: "SAT",
 };
 
-const HOUR_HEIGHT = 64; // Height per hour in pixels
+const BASE_HOUR_HEIGHT = 64; // Base height per hour in pixels at 100% zoom
 
 function getIsoDateString(date: Date): string {
   const yyyy = date.getFullYear();
@@ -167,6 +167,7 @@ export function DashboardCalendar() {
   );
   const [selectedScheduleFilter, setSelectedScheduleFilter] = useState<string>(urlScheduleIdParam);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>(urlCategoryIdParam);
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(100);
 
   useEffect(() => {
     if (["all", "calendar", "schedule"].includes(urlTypeParam)) {
@@ -417,6 +418,10 @@ export function DashboardCalendar() {
     return list;
   }, [dynamicHourRange]);
 
+  const hourHeight = useMemo(() => {
+    return Math.round(BASE_HOUR_HEIGHT * (zoomLevel / 100));
+  }, [zoomLevel]);
+
   // Navigation handlers
   const updateDateParam = (newDate: Date) => {
     const iso = getIsoDateString(newDate);
@@ -457,6 +462,20 @@ export function DashboardCalendar() {
     updateDateParam(today);
   };
 
+  const handleZoomIn = () => {
+    const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+    if (currentIndex < ZOOM_LEVELS.length - 1) {
+      setZoomLevel(ZOOM_LEVELS[currentIndex + 1]);
+    }
+  };
+
+  const handleZoomOut = () => {
+    const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
+    if (currentIndex > 0) {
+      setZoomLevel(ZOOM_LEVELS[currentIndex - 1]);
+    }
+  };
+
   const handleItemClick = (ev: RenderEvent, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingItem(ev);
@@ -480,12 +499,15 @@ export function DashboardCalendar() {
         sourceFilter={sourceFilter}
         schedules={schedules}
         selectedScheduleFilter={selectedScheduleFilter}
+        zoomLevel={zoomLevel}
         onPrev={handlePrev}
         onNext={handleNext}
         onToday={handleToday}
         onFilterChange={handleFilterChange}
         onScheduleFilterChange={handleScheduleFilterChange}
         onViewModeChange={setViewMode}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
         onOpenAddModal={() => setIsAddOpen(true)}
         formatDisplayDate={formatDisplayDate}
       />
@@ -512,7 +534,7 @@ export function DashboardCalendar() {
             weekDays={weekDays}
             timelineHours={timelineHours}
             dynamicHourRange={dynamicHourRange}
-            HOUR_HEIGHT={HOUR_HEIGHT}
+            HOUR_HEIGHT={hourHeight}
             sourceFilter={sourceFilter}
             getRenderEventsForDate={getRenderEventsForDate}
             categoryMap={categoryMap}
@@ -526,7 +548,7 @@ export function DashboardCalendar() {
             currentDate={currentDate}
             timelineHours={timelineHours}
             dynamicHourRange={dynamicHourRange}
-            HOUR_HEIGHT={HOUR_HEIGHT}
+            HOUR_HEIGHT={hourHeight}
             getRenderEventsForDate={getRenderEventsForDate}
             categoryMap={categoryMap}
             parseTimeToHours={parseTimeToHours}

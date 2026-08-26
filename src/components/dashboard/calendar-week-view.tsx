@@ -82,7 +82,7 @@ export function CalendarWeekView({
       </div>
 
       {/* Calendar Body */}
-      <div className="min-h-0 flex-1 overflow-y-auto max-h-[600px]">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="grid grid-cols-[60px_repeat(7,1fr)] relative divide-x divide-border">
           {/* Time Axis */}
           <div className="divide-y divide-border/60 bg-muted/10">
@@ -136,7 +136,8 @@ export function CalendarWeekView({
 
                   const durationHours = Math.max(0.5, endH - startH);
                   const topPx = (startH - dynamicHourRange.minHour) * HOUR_HEIGHT;
-                  const heightPx = Math.max(32, durationHours * HOUR_HEIGHT - 4);
+                  const minCardHeight = Math.max(18, Math.round(28 * (HOUR_HEIGHT / 64)));
+                  const heightPx = Math.max(minCardHeight, durationHours * HOUR_HEIGHT - 3);
                   const isSchedule = ev.type === "schedule_item";
                   const timeLabel = `${format12h(ev.startTime || startH)} – ${format12h(ev.endTime || endH)}`;
 
@@ -153,17 +154,18 @@ export function CalendarWeekView({
                           onItemClick(ev, e as unknown as React.MouseEvent);
                         }
                       }}
-                      className="
+                      className={`
                         group absolute z-10
                         flex cursor-pointer flex-col justify-between
                         overflow-hidden rounded-md
-                        border border-border bg-card p-1.5 pl-2.5
+                        border border-border bg-card
                         text-xs
                         shadow-2xs
                         transition-colors duration-100
                         hover:z-20 hover:bg-muted/70
                         focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
-                      "
+                        ${heightPx < 30 ? "p-1 pl-2" : "p-1.5 pl-2.5"}
+                      `}
                       style={{
                         top: `${topPx + 2}px`,
                         height: `${heightPx}px`,
@@ -192,7 +194,7 @@ export function CalendarWeekView({
                         </div>
 
                         {/* Schedule Parent Title */}
-                        {ev.scheduleTitle && isSchedule ? (
+                        {ev.scheduleTitle && isSchedule && heightPx >= 36 ? (
                           <div className="mt-0.5 flex items-center">
                             <span className="truncate text-[9px] text-muted-foreground leading-none">
                               {ev.scheduleTitle}
@@ -202,11 +204,13 @@ export function CalendarWeekView({
                       </div>
 
                       {/* Time Label */}
-                      <div className="mt-0.5 flex items-center gap-1">
-                        <span className="truncate font-mono text-[9px] text-muted-foreground">
-                          {timeLabel}
-                        </span>
-                      </div>
+                      {heightPx >= 28 && (
+                        <div className="mt-0.5 flex items-center gap-1">
+                          <span className="truncate font-mono text-[9px] text-muted-foreground">
+                            {timeLabel}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

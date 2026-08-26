@@ -18,10 +18,14 @@ import {
   Repeat,
   CalendarDays,
   Filter,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 export type ViewMode = "month" | "week" | "day";
 export type SourceFilter = "all" | "calendar" | "schedule";
+export type ZoomLevel = 50 | 75 | 100 | 125 | 150;
+export const ZOOM_LEVELS: ZoomLevel[] = [50, 75, 100, 125, 150];
 
 export interface CalendarToolbarProps {
   currentDate: Date;
@@ -29,12 +33,15 @@ export interface CalendarToolbarProps {
   sourceFilter: SourceFilter;
   schedules: Schedule[];
   selectedScheduleFilter: string;
+  zoomLevel?: ZoomLevel;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
   onFilterChange: (filter: SourceFilter) => void;
   onScheduleFilterChange: (scheduleId: string) => void;
   onViewModeChange: (mode: ViewMode) => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
   onOpenAddModal: () => void;
   formatDisplayDate: (date: Date, mode: ViewMode) => string;
 }
@@ -45,12 +52,15 @@ export function CalendarToolbar({
   sourceFilter,
   schedules,
   selectedScheduleFilter,
+  zoomLevel = 100,
   onPrev,
   onNext,
   onToday,
   onFilterChange,
   onScheduleFilterChange,
   onViewModeChange,
+  onZoomIn,
+  onZoomOut,
   onOpenAddModal,
   formatDisplayDate,
 }: CalendarToolbarProps) {
@@ -249,6 +259,45 @@ export function CalendarToolbar({
             </>
           )}
         </div>
+
+        {/* Zoom In / Out Controls */}
+        {(sourceFilter === "schedule" || viewMode !== "month") && (onZoomIn || onZoomOut) && (
+          <div
+            role="group"
+            aria-label="Timeline zoom controls"
+            className="flex items-center gap-0.5 bg-muted/50 rounded-md border border-border p-0.5"
+          >
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onZoomOut}
+              disabled={zoomLevel === 50}
+              aria-label="Zoom out"
+              title="Zoom out"
+              className="size-6.5 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ZoomOut className="size-3" />
+            </Button>
+            <span
+              className="min-w-[40px] px-1 text-center font-mono text-[11px] font-medium text-foreground select-none tracking-tight"
+              aria-live="polite"
+              aria-label={`Zoom level ${zoomLevel}%`}
+            >
+              {zoomLevel}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onZoomIn}
+              disabled={zoomLevel === 150}
+              aria-label="Zoom in"
+              title="Zoom in"
+              className="size-6.5 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ZoomIn className="size-3" />
+            </Button>
+          </div>
+        )}
 
         {/* Action Button */}
         <Button

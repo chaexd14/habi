@@ -52,7 +52,7 @@ export function CalendarDayView({
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[600px]">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="grid grid-cols-[60px_1fr] relative divide-x divide-border">
           {/* Dynamic 12h Time Axis */}
           <div className="divide-y divide-border/60 bg-muted/10">
@@ -89,7 +89,8 @@ export function CalendarDayView({
 
               const durationHours = Math.max(0.5, endH - startH);
               const topPx = (startH - dynamicHourRange.minHour) * HOUR_HEIGHT;
-              const heightPx = Math.max(40, durationHours * HOUR_HEIGHT - 4);
+              const minCardHeight = Math.max(22, Math.round(36 * (HOUR_HEIGHT / 64)));
+              const heightPx = Math.max(minCardHeight, durationHours * HOUR_HEIGHT - 3);
 
               const isSchedule = ev.type === "schedule_item";
               const timeLabel = `${format12h(ev.startTime || startH)} – ${format12h(ev.endTime || endH)}`;
@@ -107,7 +108,9 @@ export function CalendarDayView({
                       onItemClick(ev, e as unknown as React.MouseEvent);
                     }
                   }}
-                  className="absolute p-2.5 pl-3 rounded-md border border-border bg-card shadow-2xs transition-colors duration-100 hover:bg-muted/70 hover:z-20 z-10 flex flex-col justify-between cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className={`absolute rounded-md border border-border bg-card shadow-2xs transition-colors duration-100 hover:bg-muted/70 hover:z-20 z-10 flex flex-col justify-between cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                    heightPx < 36 ? "p-1.5 pl-2.5" : "p-2.5 pl-3"
+                  }`}
                   style={{
                     top: `${topPx + 2}px`,
                     height: `${heightPx}px`,
@@ -129,12 +132,14 @@ export function CalendarDayView({
                         {isSchedule && <Repeat className="size-3 shrink-0 opacity-60 text-muted-foreground" aria-hidden="true" />}
                         <span className="truncate">{ev.title}</span>
                       </span>
-                      <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 shrink-0">
-                        {timeLabel}
-                      </span>
+                      {heightPx >= 28 && (
+                        <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 shrink-0">
+                          {timeLabel}
+                        </span>
+                      )}
                     </div>
 
-                    {isSchedule && ev.scheduleTitle && (
+                    {isSchedule && ev.scheduleTitle && heightPx >= 44 && (
                       <div className="mt-0.5 flex items-center">
                         <span className="truncate text-[10px] text-muted-foreground">
                           {ev.scheduleTitle}
@@ -142,14 +147,14 @@ export function CalendarDayView({
                       </div>
                     )}
 
-                    {ev.description && (
+                    {ev.description && heightPx >= 58 && (
                       <p className="text-[11px] text-muted-foreground font-normal mt-0.5 truncate leading-tight">
                         {ev.description}
                       </p>
                     )}
                   </div>
 
-                  {cat && (
+                  {cat && heightPx >= 40 && (
                     <div className="flex items-center gap-1 mt-1 shrink-0">
                       <span
                         className="size-1.5 rounded-full shrink-0"
