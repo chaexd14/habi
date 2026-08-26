@@ -14,9 +14,10 @@ export const CreateScheduleItemSchema = z.object({
 
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
+  allow_conflict: z.boolean().optional(),
 });
 
 export const UpdateScheduleItemSchema = CreateScheduleItemSchema.partial();
 
-export type CreateScheduleItemInput = z.infer<typeof CreateScheduleItemSchema>
-export type UpdateScheduleItemInput = z.infer<typeof UpdateScheduleItemSchema>
+export type CreateScheduleItemInput = z.infer<typeof CreateScheduleItemSchema>;
+export type UpdateScheduleItemInput = z.infer<typeof UpdateScheduleItemSchema>;

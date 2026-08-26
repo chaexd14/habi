@@ -302,6 +302,17 @@ export function DashboardCalendar() {
 
           if (Array.isArray(sItem.days) && sItem.days.includes(dayCode)) {
             const sch = scheduleMap.get(sItem.schedule_id);
+
+            // Respect parent schedule start_date and end_date bounds
+            if (sch) {
+              if (sch.start_date && iso < sch.start_date) {
+                return;
+              }
+              if (sch.end_date && iso > sch.end_date) {
+                return;
+              }
+            }
+
             result.push({
               id: `sched-${sItem.id}-${iso}`,
               rawId: sItem.id,
@@ -322,6 +333,7 @@ export function DashboardCalendar() {
     },
     [calendarItems, scheduleItems, scheduleMap, sourceFilter, selectedScheduleFilter, selectedCategoryFilter]
   );
+
 
   // Month Grid Days
   const monthDays = useMemo(() => {
@@ -535,6 +547,8 @@ export function DashboardCalendar() {
         onClose={() => setIsAddOpen(false)}
         schedules={schedules}
         categories={categories}
+        calendarItems={calendarItems}
+        scheduleItems={scheduleItems}
         initialDayIso={getIsoDateString(currentDate)}
         onCalendarItemCreated={(newItem) => setCalendarItems((prev) => [...prev, newItem])}
         onScheduleCreated={(newSched) => setSchedules((prev) => [...prev, newSched])}
@@ -552,6 +566,7 @@ export function DashboardCalendar() {
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         item={editingItem}
+        calendarItems={calendarItems}
         scheduleItems={scheduleItems}
         schedules={schedules}
         categories={categories}
@@ -568,6 +583,7 @@ export function DashboardCalendar() {
           setScheduleItems((prev) => prev.filter((i) => i.id !== deletedId))
         }
       />
+
     </div>
   );
 }

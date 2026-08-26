@@ -3,8 +3,9 @@ import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { CreateScheduleItemSchema } from "@/lib/validations/schedule-item";
-import { detectScheduleConflicts } from "@/lib/services/schedule-conflict";
+import { detectRoutineConflicts } from "@/lib/services/schedule-conflict";
 import { ScheduleItem } from "@/types/schedule";
+
 
 import { fetchScheduleItemsCached } from "@/lib/api/schedule-item-server";
 
@@ -73,13 +74,16 @@ export async function POST(request: NextRequest) {
   const token = authHeader.substring(7);
   const supabase = createApiClient(token);
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return NextResponse.json(
       {
         success: false,
-        error: "Unable to authenticate user."
+        error: "Unable to authenticate user.",
       },
       { status: 401 }
     );
@@ -99,40 +103,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const scheduleItem = result.data;
+  const { allow_conflict, ...scheduleItemData } = result.data;
 
-  // Conflict detection via service: fetch existing items for target schedule
-  const { data: existingItems, error: existingError } = await supabase
-    .from("schedule_items")
-    .select("*")
-    .eq("schedule_id", scheduleItem.schedule_id);
+  // If allow_conflict is not explicitly true, perform conflict check
+  if (!allow_conflict) {
+    // Fetch all user schedules, schedule items, and calendar items
+    const [
+      { data: userSchedules },
+      { data: allUserScheduleItems },
+      { data: allUserCalendarItems },
+    ] = await Promise.all([
+      supabase.from("schedules").select("*").eq("user_id", user.id),
+      supabase
+        .from("schedule_items")
+        .select("*, schedules!inner(user_id)")
+        .eq("schedules.user_id", user.id),
+      supabase.from("calendar_items").select("*").eq("user_id", user.id),
+    ]);
 
-  if (existingError) {
-    return NextResponse.json(
-      { success: false, error: existingError.message },
-      { status: 500 }
-    );
-  }
+    const targetSchedule = userSchedules?.find((s) => s.id === scheduleItemData.schedule_id);
 
-  if (existingItems && existingItems.length > 0) {
-    const scheduleIds = [...new Set(existingItems.map((i: ScheduleItem) => i.schedule_id))];
-    const { data: scheduleData } = await supabase
-      .from("schedules")
-      .select("id, title")
-      .in("id", scheduleIds);
-
-    const scheduleNameMap = new Map<string, string>();
-    if (scheduleData) {
-      for (const s of scheduleData) {
-        scheduleNameMap.set(s.id, s.title);
-      }
-    }
-
-    const conflicts = detectScheduleConflicts(
-      scheduleItem,
-      existingItems as ScheduleItem[],
-      scheduleNameMap
-    );
+    const conflicts = detectRoutineConflicts({
+      newItem: scheduleItemData,
+      targetSchedule,
+      allSchedules: userSchedules || [],
+      allScheduleItems: (allUserScheduleItems as unknown as ScheduleItem[]) || [],
+      allCalendarItems: allUserCalendarItems || [],
+    });
 
     if (conflicts.length > 0) {
       return NextResponse.json(
@@ -146,10 +143,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // No conflicts — create the schedule item
+  // Create the schedule item (without allow_conflict property)
   const { data, error } = await supabase
     .from("schedule_items")
-    .insert([scheduleItem])
+    .insert([scheduleItemData])
     .select()
     .single();
 
@@ -173,4 +170,4 @@ export async function POST(request: NextRequest) {
     },
     { status: 201 }
   );
-}
+}

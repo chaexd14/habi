@@ -8,12 +8,36 @@ import { createScheduleApi } from "@/lib/api/schedule";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import { X, Loader2, CalendarRange } from "lucide-react";
+import { X, Loader2, CalendarRange, Clock, CalendarDays, CheckCircle2 } from "lucide-react";
+
+export type DurationOption = "3" | "7" | "14" | "custom_days" | "custom_range" | "ongoing";
 
 export interface AddScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onScheduleCreated: (schedule: Schedule) => void;
+}
+
+function getTodayIso(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function computeEndDate(startDateIso: string, durationDays: number): string {
+  if (!startDateIso || durationDays < 1) return "";
+  const parts = startDateIso.split("-");
+  if (parts.length !== 3) return "";
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const d = new Date(year, month, day + durationDays - 1);
+  const yyyy = d.getFullYear();
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export function AddScheduleModal({
@@ -24,8 +48,10 @@ export function AddScheduleModal({
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [durationOption, setDurationOption] = useState<DurationOption>("7");
+  const [customDaysCount, setCustomDaysCount] = useState("30");
+  const [startDate, setStartDate] = useState(getTodayIso());
+  const [endDate, setEndDate] = useState(computeEndDate(getTodayIso(), 7));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -34,12 +60,53 @@ export function AddScheduleModal({
     setMounted(true);
   }, []);
 
+  // Update End Date whenever start date or duration option changes
+  useEffect(() => {
+    if (!startDate) return;
+
+    if (durationOption === "3") {
+      setEndDate(computeEndDate(startDate, 3));
+    } else if (durationOption === "7") {
+      setEndDate(computeEndDate(startDate, 7));
+    } else if (durationOption === "14") {
+      setEndDate(computeEndDate(startDate, 14));
+    } else if (durationOption === "custom_days") {
+      const days = parseInt(customDaysCount, 10);
+      if (!isNaN(days) && days > 0) {
+        setEndDate(computeEndDate(startDate, days));
+      }
+    } else if (durationOption === "ongoing") {
+      setEndDate("");
+    }
+  }, [startDate, durationOption, customDaysCount]);
+
   if (!isOpen || !mounted) return null;
+
+  const handleDurationSelect = (opt: DurationOption) => {
+    setDurationOption(opt);
+    if (opt === "3") {
+      setEndDate(computeEndDate(startDate || getTodayIso(), 3));
+    } else if (opt === "7") {
+      setEndDate(computeEndDate(startDate || getTodayIso(), 7));
+    } else if (opt === "14") {
+      setEndDate(computeEndDate(startDate || getTodayIso(), 14));
+    } else if (opt === "custom_days") {
+      const days = parseInt(customDaysCount, 10) || 30;
+      setEndDate(computeEndDate(startDate || getTodayIso(), days));
+    } else if (opt === "ongoing") {
+      setEndDate("");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       setFormError("Schedule title is required.");
+      return;
+    }
+
+    if (startDate && endDate && endDate < startDate) {
+      setFormError("End date must be on or after start date.");
       return;
     }
 
@@ -59,8 +126,9 @@ export function AddScheduleModal({
         onScheduleCreated(newSched);
         setTitle("");
         setDescription("");
-        setStartDate("");
-        setEndDate("");
+        setDurationOption("7");
+        setStartDate(getTodayIso());
+        setEndDate(computeEndDate(getTodayIso(), 7));
         onClose();
       } else {
         setFormError(res.error || "Failed to create schedule.");
@@ -71,6 +139,8 @@ export function AddScheduleModal({
       setIsSubmitting(false);
     }
   };
+
+  const isPlanned = Boolean(startDate && endDate);
 
   return createPortal(
     <div
@@ -84,7 +154,7 @@ export function AddScheduleModal({
         className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
       />
 
-      <div className="relative w-full max-w-md rounded-lg border border-border bg-card text-card-foreground p-5 shadow-lg z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-98 duration-150 space-y-3.5">
+      <div className="relative w-full max-w-lg rounded-xl border border-border bg-card text-card-foreground p-5 shadow-lg z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-98 duration-150 space-y-4">
         <button
           type="button"
           onClick={onClose}
@@ -95,15 +165,15 @@ export function AddScheduleModal({
         </button>
 
         <div className="flex items-center gap-2.5">
-          <div className="size-7 rounded-md bg-muted text-foreground flex items-center justify-center">
-            <CalendarRange className="size-3.5" />
+          <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <CalendarRange className="size-4" />
           </div>
           <div>
             <h3 id="add_sched_modal_title" className="text-sm font-semibold text-foreground">
-              New Schedule
+              Create New Schedule
             </h3>
             <p className="text-xs text-muted-foreground">
-              Create a schedule for recurring routines and events.
+              Set up a planned schedule duration or an ongoing recurring schedule.
             </p>
           </div>
         </div>
@@ -114,15 +184,15 @@ export function AddScheduleModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3 text-left">
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <div className="space-y-1">
             <label htmlFor="sched_title_input" className="text-xs font-medium text-foreground">
-              Schedule Title
+              Schedule Title <span className="text-destructive">*</span>
             </label>
             <Input
               id="sched_title_input"
               type="text"
-              placeholder="e.g. Work Week, University Term"
+              placeholder="e.g. 2-Week Sprint, Spring Term, Routine"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -138,17 +208,83 @@ export function AddScheduleModal({
             <Input
               id="sched_desc_input"
               type="text"
-              placeholder="Notes or details..."
+              placeholder="Goals or notes for this schedule..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="h-8 rounded-md"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          {/* Schedule Duration Options */}
+          <div className="space-y-2 pt-1 border-t border-border">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Clock className="size-3.5 text-muted-foreground" />
+                <span>Schedule Duration / Mode</span>
+              </label>
+              {isPlanned ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  <CheckCircle2 className="size-3" />
+                  Planned Schedule
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  Ongoing Schedule
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+              {[
+                { id: "3", label: "3 Days" },
+                { id: "7", label: "7 Days (1W)" },
+                { id: "14", label: "14 Days (2W)" },
+                { id: "custom_days", label: "Custom Days" },
+                { id: "custom_range", label: "Date Range" },
+                { id: "ongoing", label: "Ongoing" },
+              ].map((item) => {
+                const isSelected = durationOption === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleDurationSelect(item.id as DurationOption)}
+                    className={`py-1.5 px-2 text-xs font-medium rounded-md border transition-all cursor-pointer text-center ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-2xs font-semibold"
+                        : "bg-background text-muted-foreground border-border hover:text-foreground hover:bg-muted/40"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {durationOption === "custom_days" && (
+              <div className="flex items-center gap-2 pt-1">
+                <label htmlFor="custom_days_input" className="text-xs text-muted-foreground shrink-0">
+                  Number of days:
+                </label>
+                <Input
+                  id="custom_days_input"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={customDaysCount}
+                  onChange={(e) => setCustomDaysCount(e.target.value)}
+                  className="h-7 w-24 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">days</span>
+              </div>
+            )}
+          </div>
+
+          {/* Date Picker Grid */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label htmlFor="sched_start_date" className="text-xs font-medium text-foreground">
-                Start Date (Optional)
+                Start Date
               </label>
               <DatePicker
                 id="sched_start_date"
@@ -158,15 +294,40 @@ export function AddScheduleModal({
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="sched_end_date" className="text-xs font-medium text-foreground">
-                End Date (Optional)
+              <label htmlFor="sched_end_date" className="text-xs font-medium text-foreground flex items-center justify-between">
+                <span>End Date</span>
+                {durationOption !== "custom_range" && durationOption !== "ongoing" && (
+                  <span className="text-[10px] text-muted-foreground font-normal">Auto-calculated</span>
+                )}
               </label>
               <DatePicker
                 id="sched_end_date"
                 date={endDate}
-                onDateChange={(d) => setEndDate(d)}
-                placeholder="Pick end date"
+                onDateChange={(d) => {
+                  setEndDate(d);
+                  if (durationOption !== "custom_range") {
+                    setDurationOption("custom_range");
+                  }
+                }}
+                disabled={durationOption === "ongoing"}
+                placeholder={durationOption === "ongoing" ? "None (Ongoing)" : "Pick end date"}
               />
+            </div>
+          </div>
+
+          {/* Date Preview Card */}
+          <div className="rounded-lg border border-border bg-muted/40 p-2.5 text-xs text-muted-foreground flex items-center gap-2">
+            <CalendarDays className="size-4 text-primary shrink-0" />
+            <div className="truncate">
+              {isPlanned ? (
+                <span>
+                  Active period: <strong className="text-foreground">{startDate}</strong> to <strong className="text-foreground">{endDate}</strong>
+                </span>
+              ) : (
+                <span>
+                  Recurring schedule starts on <strong className="text-foreground">{startDate || "creation"}</strong> (no end date).
+                </span>
+              )}
             </div>
           </div>
 
@@ -205,3 +366,4 @@ export function AddScheduleModal({
 }
 
 export default AddScheduleModal;
+

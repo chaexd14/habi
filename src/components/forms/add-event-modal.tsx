@@ -4,11 +4,12 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CalendarItem } from "@/types/calendar-item";
-import { Schedule, ScheduleItem, DayOfWeek } from "@/types/schedule";
+import { Schedule, ScheduleItem, DayOfWeek, ConflictDetail } from "@/types/schedule";
 import { Category } from "@/types/category";
 
 import { createCalendarItemApi } from "@/lib/api/calendar-item";
-import { createScheduleItemApi, ScheduleConflictError, ScheduleConflict } from "@/lib/api/schedule-item";
+import { createScheduleItemApi, ScheduleConflictError } from "@/lib/api/schedule-item";
+import { detectCalendarEventConflicts, detectRoutineConflicts } from "@/lib/services/schedule-conflict";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Repeat, X, Loader2, AlertTriangle, Clock, ShieldAlert, Check } from "lucide-react";
 
 export type FormType = "calendar_item" | "schedule_item";
 
@@ -39,6 +40,8 @@ export interface AddEventModalProps {
   onClose: () => void;
   schedules: Schedule[];
   categories: Category[];
+  calendarItems?: CalendarItem[];
+  scheduleItems?: ScheduleItem[];
   initialDayIso: string;
   onCalendarItemCreated: (item: CalendarItem) => void;
   onScheduleCreated?: (schedule: Schedule) => void;
@@ -51,6 +54,8 @@ export function AddEventModal({
   onClose,
   schedules,
   categories,
+  calendarItems = [],
+  scheduleItems = [],
   initialDayIso,
   onCalendarItemCreated,
   onScheduleItemCreated,
@@ -76,7 +81,8 @@ export function AddEventModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [conflictWarnings, setConflictWarnings] = useState<ScheduleConflict[]>([]);
+  const [conflictWarnings, setConflictWarnings] = useState<ConflictDetail[]>([]);
+  const [pendingAllowConflict, setPendingAllowConflict] = useState(false);
 
   const categorySelectItems = React.useMemo(() => [
     { label: "No Category", value: "none" },
@@ -92,6 +98,12 @@ export function AddEventModal({
   }, []);
 
   useEffect(() => {
+    if (initialDayIso) {
+      setEventDay(initialDayIso);
+    }
+  }, [initialDayIso]);
+
+  useEffect(() => {
     if (schedules.length > 0) {
       if (!selectedScheduleId || !schedules.some((s) => s.id === selectedScheduleId)) {
         setSelectedScheduleId(schedules[0].id);
@@ -101,18 +113,26 @@ export function AddEventModal({
     }
   }, [schedules, isOpen]);
 
+  // Clear conflicts when user toggles form type or edits fields
+  const handleTypeChange = (type: FormType) => {
+    setFormType(type);
+    setFormError(null);
+    setConflictWarnings([]);
+    setPendingAllowConflict(false);
+  };
+
   if (!isOpen || !mounted) return null;
 
   const toggleSchedDay = (day: DayOfWeek) => {
+    setConflictWarnings([]);
+    setPendingAllowConflict(false);
     setSchedSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSubmit = async (allowConflict = false) => {
     setFormError(null);
-    setConflictWarnings([]);
     setIsSubmitting(true);
 
     try {
@@ -123,6 +143,28 @@ export function AddEventModal({
           return;
         }
 
+        // Client-side pre-check for conflicts if not forcing
+        if (!allowConflict) {
+          const clientConflicts = detectCalendarEventConflicts({
+            newEvent: {
+              day: eventDay,
+              start_time: eventStartTime || null,
+              end_time: eventEndTime || null,
+              title: eventTitle.trim(),
+            },
+            allSchedules: schedules,
+            allScheduleItems: scheduleItems,
+            allCalendarItems: calendarItems,
+          });
+
+          if (clientConflicts.length > 0) {
+            setConflictWarnings(clientConflicts);
+            setPendingAllowConflict(true);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
         const res = await createCalendarItemApi({
           title: eventTitle.trim(),
           description: eventDescription.trim() || null,
@@ -130,6 +172,7 @@ export function AddEventModal({
           start_time: eventStartTime || null,
           end_time: eventEndTime || null,
           category_id: eventCategoryId || null,
+          allow_conflict: allowConflict,
         });
 
         if (res.success && res.data) {
@@ -137,6 +180,8 @@ export function AddEventModal({
           onCalendarItemCreated(newItem);
           setEventTitle("");
           setEventDescription("");
+          setConflictWarnings([]);
+          setPendingAllowConflict(false);
           onClose();
         } else {
           setFormError(res.error || "Failed to create calendar item.");
@@ -160,6 +205,32 @@ export function AddEventModal({
           return;
         }
 
+        const targetSched = schedules.find((s) => s.id === selectedScheduleId);
+
+        // Client-side pre-check for conflicts if not forcing
+        if (!allowConflict) {
+          const clientConflicts = detectRoutineConflicts({
+            newItem: {
+              schedule_id: selectedScheduleId,
+              days: schedSelectedDays,
+              start_time: schedStartTime,
+              end_time: schedEndTime,
+              title: schedItemTitle.trim(),
+            },
+            targetSchedule: targetSched,
+            allSchedules: schedules,
+            allScheduleItems: scheduleItems,
+            allCalendarItems: calendarItems,
+          });
+
+          if (clientConflicts.length > 0) {
+            setConflictWarnings(clientConflicts);
+            setPendingAllowConflict(true);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
         const res = await createScheduleItemApi({
           schedule_id: selectedScheduleId,
           title: schedItemTitle.trim(),
@@ -167,12 +238,15 @@ export function AddEventModal({
           start_time: schedStartTime,
           end_time: schedEndTime,
           category_id: schedCategoryId || null,
+          allow_conflict: allowConflict,
         });
 
         if (res.success && res.data) {
           const newItem: ScheduleItem = Array.isArray(res.data) ? res.data[0] : res.data;
           onScheduleItemCreated(newItem);
           setSchedItemTitle("");
+          setConflictWarnings([]);
+          setPendingAllowConflict(false);
           onClose();
         } else {
           setFormError(res.error || "Failed to create schedule item.");
@@ -187,6 +261,7 @@ export function AddEventModal({
 
       if (isConflict && err instanceof Error && "conflicts" in err) {
         setConflictWarnings((err as ScheduleConflictError).conflicts);
+        setPendingAllowConflict(true);
         setFormError(err.message);
       } else {
         setFormError(err instanceof Error ? err.message : "Error creating item.");
@@ -194,6 +269,11 @@ export function AddEventModal({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeSubmit(false);
   };
 
   return createPortal(
@@ -210,7 +290,7 @@ export function AddEventModal({
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-md rounded-lg border border-border bg-card text-card-foreground p-5 shadow-lg z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-98 duration-150 space-y-3.5">
+      <div className="relative w-full max-w-lg rounded-xl border border-border bg-card text-card-foreground p-5 shadow-lg z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-98 duration-150 space-y-4">
         <button
           type="button"
           onClick={onClose}
@@ -228,87 +308,130 @@ export function AddEventModal({
         <div
           role="radiogroup"
           aria-label="Choose item type"
-          className="flex items-center gap-0.5 bg-muted/50 p-0.5 rounded-md border border-border"
+          className="flex items-center gap-0.5 bg-muted/50 p-0.5 rounded-lg border border-border"
         >
           <button
             type="button"
             role="radio"
             aria-checked={formType === "calendar_item"}
-            onClick={() => setFormType("calendar_item")}
-            className={`flex-1 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+            onClick={() => handleTypeChange("calendar_item")}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "calendar_item"
                 ? "bg-background text-foreground shadow-2xs font-semibold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <CalendarIcon className="size-3 opacity-70" aria-hidden="true" />
+            <CalendarIcon className="size-3.5 opacity-70" aria-hidden="true" />
             <span>Single Event</span>
           </button>
           <button
             type="button"
             role="radio"
             aria-checked={formType === "schedule_item"}
-            onClick={() => setFormType("schedule_item")}
-            className={`flex-1 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+            onClick={() => handleTypeChange("schedule_item")}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
               formType === "schedule_item"
                 ? "bg-background text-foreground shadow-2xs font-semibold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Repeat className="size-3 opacity-70" aria-hidden="true" />
+            <Repeat className="size-3.5 opacity-70" aria-hidden="true" />
             <span>Recurring Routine</span>
           </button>
         </div>
 
-        {formError && (
+        {formError && !pendingAllowConflict && (
           <div role="alert" className="p-2.5 text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20 rounded-md">
             {formError}
           </div>
         )}
 
+        {/* Conflict Warning Card with Allow Conflict action */}
         {conflictWarnings.length > 0 && (
-          <div role="alert" className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-3.5 shrink-0" />
-              <span>Schedule Conflict — overlapping times</span>
+          <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="size-4 shrink-0" />
+                <span>
+                  {formType === "calendar_item"
+                    ? "Schedule Conflict — user has a planned schedule on that day"
+                    : "Schedule Conflict — overlapping events or routines"}
+                </span>
+              </div>
             </div>
-            <div className="space-y-1">
-              {conflictWarnings.map((c) => (
+
+            <div className="space-y-1.5 max-h-36 overflow-y-auto">
+              {conflictWarnings.map((c, idx) => (
                 <div
-                  key={c.id}
-                  className="rounded border border-amber-500/20 bg-background/90 px-2 py-1.5 text-xs space-y-0.5"
+                  key={c.id || idx}
+                  className="rounded-lg border border-amber-500/20 bg-background/90 p-2 text-xs space-y-1 shadow-2xs"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-foreground truncate">{c.title}</span>
-                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-1 rounded flex items-center gap-0.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-medium text-foreground truncate">{c.title}</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium">
+                        {c.sourceType === "schedule_item" ? "Planned Schedule" : "Calendar Event"}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex items-center gap-1">
                       <Clock className="size-2.5" />
                       {c.start_time} – {c.end_time}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-[10px]">
-                    <span>in <strong className="text-foreground">{c.schedule_title}</strong></span>
-                    <span>·</span>
-                    <span>{c.overlapping_days.join(", ")}</span>
-                  </div>
+
+                  {c.message ? (
+                    <p className="text-[11px] text-muted-foreground leading-tight">{c.message}</p>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-[10px]">
+                      {c.scheduleTitle && <span>in <strong className="text-foreground">{c.scheduleTitle}</strong></span>}
+                      {c.date && <span>· on <strong>{c.date}</strong></span>}
+                      {c.days && <span>· {c.days.join(", ")}</span>}
+                    </div>
+                  )}
                 </div>
               ))}
+            </div>
+
+            {/* Quick action buttons for conflicts */}
+            <div className="flex items-center justify-between pt-1 border-t border-amber-500/20">
+              <span className="text-[11px] text-muted-foreground">
+                You can allow this conflict or adjust details below.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => executeSubmit(true)}
+                disabled={isSubmitting}
+                className="h-7 text-xs border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 rounded-md font-medium cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-3 animate-spin mr-1" />
+                ) : (
+                  <ShieldAlert className="size-3 mr-1 text-amber-500" />
+                )}
+                Allow Conflict & Save
+              </Button>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="space-y-3 text-left">
+        <form onSubmit={handleFormSubmit} className="space-y-3.5 text-left">
           {formType === "calendar_item" ? (
             <>
               <div className="space-y-1">
                 <label htmlFor="event_title" className="text-xs font-medium text-foreground">
-                  Event Title
+                  Event Title <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="event_title"
                   type="text"
                   placeholder="e.g. Team Meeting, Doctor Visit"
                   value={eventTitle}
-                  onChange={(e) => setEventTitle(e.target.value)}
+                  onChange={(e) => {
+                    setEventTitle(e.target.value);
+                    setConflictWarnings([]);
+                  }}
                   required
                   autoFocus
                   className="h-8 rounded-md"
@@ -317,12 +440,15 @@ export function AddEventModal({
 
               <div className="space-y-1">
                 <label htmlFor="event_day" className="text-xs font-medium text-foreground">
-                  Date
+                  Date <span className="text-destructive">*</span>
                 </label>
                 <DatePicker
                   id="event_day"
                   date={eventDay}
-                  onDateChange={(d) => setEventDay(d)}
+                  onDateChange={(d) => {
+                    setEventDay(d);
+                    setConflictWarnings([]);
+                  }}
                 />
               </div>
 
@@ -349,7 +475,10 @@ export function AddEventModal({
                     id="event_start"
                     type="time"
                     value={eventStartTime}
-                    onChange={(e) => setEventStartTime(e.target.value)}
+                    onChange={(e) => {
+                      setEventStartTime(e.target.value);
+                      setConflictWarnings([]);
+                    }}
                     className="h-8 rounded-md"
                   />
                 </div>
@@ -362,7 +491,10 @@ export function AddEventModal({
                     id="event_end"
                     type="time"
                     value={eventEndTime}
-                    onChange={(e) => setEventEndTime(e.target.value)}
+                    onChange={(e) => {
+                      setEventEndTime(e.target.value);
+                      setConflictWarnings([]);
+                    }}
                     className="h-8 rounded-md"
                   />
                 </div>
@@ -396,13 +528,16 @@ export function AddEventModal({
             <>
               <div className="space-y-1">
                 <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
-                  Target Schedule
+                  Target Schedule <span className="text-destructive">*</span>
                 </label>
                 <Select
                   items={scheduleSelectItems}
                   value={selectedScheduleId}
                   onValueChange={(val) => {
-                    if (val) setSelectedScheduleId(val);
+                    if (val) {
+                      setSelectedScheduleId(val);
+                      setConflictWarnings([]);
+                    }
                   }}
                   disabled={schedules.length === 0}
                 >
@@ -421,14 +556,17 @@ export function AddEventModal({
 
               <div className="space-y-1">
                 <label htmlFor="sched_item_title" className="text-xs font-medium text-foreground">
-                  Routine Title
+                  Routine Title <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="sched_item_title"
                   type="text"
                   placeholder="e.g. Team Standup, Deep Work"
                   value={schedItemTitle}
-                  onChange={(e) => setSchedItemTitle(e.target.value)}
+                  onChange={(e) => {
+                    setSchedItemTitle(e.target.value);
+                    setConflictWarnings([]);
+                  }}
                   required
                   className="h-8 rounded-md"
                 />
@@ -471,7 +609,10 @@ export function AddEventModal({
                     id="sched_start"
                     type="time"
                     value={schedStartTime}
-                    onChange={(e) => setSchedStartTime(e.target.value)}
+                    onChange={(e) => {
+                      setSchedStartTime(e.target.value);
+                      setConflictWarnings([]);
+                    }}
                     required
                     className="h-8 rounded-md"
                   />
@@ -485,7 +626,10 @@ export function AddEventModal({
                     id="sched_end"
                     type="time"
                     value={schedEndTime}
-                    onChange={(e) => setSchedEndTime(e.target.value)}
+                    onChange={(e) => {
+                      setSchedEndTime(e.target.value);
+                      setConflictWarnings([]);
+                    }}
                     required
                     className="h-8 rounded-md"
                   />
@@ -529,21 +673,44 @@ export function AddEventModal({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isSubmitting}
-              className="rounded-md font-medium cursor-pointer"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Item"
-              )}
-            </Button>
+
+            {conflictWarnings.length > 0 ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => executeSubmit(true)}
+                disabled={isSubmitting}
+                className="rounded-md font-medium cursor-pointer bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-1.5 size-3.5" />
+                    Allow Conflict & Save
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSubmitting}
+                className="rounded-md font-medium cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Item"
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </div>
@@ -553,3 +720,4 @@ export function AddEventModal({
 }
 
 export default AddEventModal;
+

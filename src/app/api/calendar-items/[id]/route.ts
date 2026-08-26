@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }, { status: 400 })
   }
 
-  const updates = result.data
+  const { allow_conflict, ...updates } = result.data;
 
   // Update the calendar item
   const { data: calendarItem, error: updateError } = await supabase
@@ -88,7 +88,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     .update(updates)
     .eq("id", id)
     .select("*")
-    .single()
+    .single();
+
 
   if (updateError) {
     return NextResponse.json({
