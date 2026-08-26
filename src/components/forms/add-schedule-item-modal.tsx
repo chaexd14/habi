@@ -189,8 +189,9 @@ export function AddScheduleItemModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await executeSubmit(false);
+    await executeSubmit(conflictWarnings.length > 0);
   };
+
 
   return createPortal(
     <div
