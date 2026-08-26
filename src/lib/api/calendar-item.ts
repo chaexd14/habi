@@ -80,6 +80,9 @@ export async function getCalendarItems(forceRefresh = false): Promise<CalendarIt
   return calendarItemPromise;
 }
 
+import { ScheduleConflictError } from "@/lib/api/schedule-item";
+import type { ConflictDetail } from "@/lib/services/schedule-conflict";
+
 export async function createCalendarItemApi(
   input: CreateCalendarItemInput
 ): Promise<CalendarItemResponse> {
@@ -104,12 +107,19 @@ export async function createCalendarItemApi(
   const resJson = await response.json();
 
   if (!response.ok || !resJson.success) {
+    if (response.status === 409 && resJson.conflicts) {
+      throw new ScheduleConflictError(
+        resJson.error || "Schedule conflict detected",
+        resJson.conflicts as ConflictDetail[]
+      );
+    }
     throw new Error(resJson.error || "Failed to create calendar event.");
   }
 
   clearCalendarItemCache();
   return resJson;
 }
+
 
 export async function updateCalendarItemApi(
   id: string,
@@ -136,8 +146,15 @@ export async function updateCalendarItemApi(
   const resJson = await response.json();
 
   if (!response.ok || !resJson.success) {
+    if (response.status === 409 && resJson.conflicts) {
+      throw new ScheduleConflictError(
+        resJson.error || "Schedule conflict detected",
+        resJson.conflicts as ConflictDetail[]
+      );
+    }
     throw new Error(resJson.error || "Failed to update calendar event.");
   }
+
 
   clearCalendarItemCache();
   return resJson;

@@ -1,3 +1,5 @@
+import { ConflictDetail } from "./schedule";
+
 export type CalendarItem = {
   id: string;
   user_id?: string;
@@ -15,5 +17,7 @@ export type CalendarItemResponse = {
   success: boolean;
   message?: string;
   error?: string;
+  conflicts?: ConflictDetail[];
   data: CalendarItem[];
 };
+

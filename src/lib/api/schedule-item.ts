@@ -80,14 +80,14 @@ export async function getScheduleItems(forceRefresh = false): Promise<ScheduleIt
   return scheduleItemPromise;
 }
 
-// Re-export ScheduleConflict type from the service for consumer convenience
-export type { ScheduleConflict } from "@/lib/services/schedule-conflict";
+// Re-export conflict types from the service for consumer convenience
+export type { ConflictDetail, ScheduleConflict } from "@/lib/services/schedule-conflict";
 
-import type { ScheduleConflict } from "@/lib/services/schedule-conflict";
+import type { ConflictDetail } from "@/lib/services/schedule-conflict";
 
 export class ScheduleConflictError extends Error {
-  conflicts: ScheduleConflict[];
-  constructor(message: string, conflicts: ScheduleConflict[]) {
+  conflicts: ConflictDetail[];
+  constructor(message: string, conflicts: ConflictDetail[]) {
     super(message);
     this.name = "ScheduleConflictError";
     this.conflicts = conflicts;
@@ -122,7 +122,7 @@ export async function createScheduleItemApi(
     if (response.status === 409 && resJson.conflicts) {
       throw new ScheduleConflictError(
         resJson.error || "Schedule conflict detected",
-        resJson.conflicts as ScheduleConflict[]
+        resJson.conflicts as ConflictDetail[]
       );
     }
 
@@ -141,6 +141,7 @@ export async function createScheduleItemApi(
   clearScheduleItemCache();
   return resJson;
 }
+
 
 export async function updateScheduleItemApi(
   id: string,
@@ -167,6 +168,13 @@ export async function updateScheduleItemApi(
   const resJson = await response.json();
 
   if (!response.ok || !resJson.success) {
+    if (response.status === 409 && resJson.conflicts) {
+      throw new ScheduleConflictError(
+        resJson.error || "Schedule conflict detected",
+        resJson.conflicts as ConflictDetail[]
+      );
+    }
+
     let errorMsg = resJson.error || "Failed to update schedule item.";
     if (resJson.details?.fieldErrors) {
       const fieldMsgs = Object.entries(resJson.details.fieldErrors)
@@ -178,6 +186,7 @@ export async function updateScheduleItemApi(
     }
     throw new Error(errorMsg);
   }
+
 
   clearScheduleItemCache();
   return resJson;

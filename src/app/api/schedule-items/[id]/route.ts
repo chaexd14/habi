@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const updates = result.data;
+  const { allow_conflict, ...updates } = result.data;
 
   // Update schedule item
   const { data: scheduleItem, error: updateError } = await supabase
@@ -107,6 +107,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     .eq("id", id)
     .select("*")
     .single();
+
 
   if (updateError) {
     return NextResponse.json(
