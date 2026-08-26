@@ -372,7 +372,8 @@ export function EditEventModal({
           </div>
         )}
 
-        <form onSubmit={(e) => { e.preventDefault(); executeEditSave(false); }} className="space-y-3.5 text-left">
+        <form onSubmit={(e) => { e.preventDefault(); executeEditSave(conflictWarnings.length > 0); }} className="space-y-3.5 text-left">
+
           <div className="space-y-1">
             <label htmlFor="edit_title_input" className="text-xs font-medium text-foreground">
               Title <span className="text-destructive">*</span>

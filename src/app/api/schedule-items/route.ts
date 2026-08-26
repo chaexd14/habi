@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  revalidateTag("schedule-items", "default");
   revalidateTag("schedules", "default");
 
   return NextResponse.json(
@@ -170,4 +171,5 @@ export async function POST(request: NextRequest) {
     },
     { status: 201 }
   );
+
 }
