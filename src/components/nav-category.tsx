@@ -19,9 +19,10 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tag, Plus, FolderKanban, ChevronRight } from "lucide-react";
+import { Tag, Plus, FolderKanban, ChevronRight, LayoutList } from "lucide-react";
 
 import { AddCategoryForm } from "@/components/forms/add-category-form";
+import { ManageSchedulesCategoriesModal } from "@/components/forms/manage-schedules-categories-modal";
 
 export interface NavCategoryProps extends React.ComponentPropsWithoutRef<typeof SidebarGroup> {
   categories?: Category[];
@@ -47,6 +48,7 @@ export function NavCategory({
   const error = propCategories ? null : contextError;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const currentCategoryId = searchParams.get("categoryId") || activeCategoryId || "";
 
@@ -83,18 +85,33 @@ export function NavCategory({
               <span>Categories</span>
             </CollapsibleTrigger>
 
-            <button
-              type="button"
-              title="Add Category"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAddOpen(true);
-              }}
-              className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
-            >
-              <Plus className="size-3.5" />
-              <span className="sr-only">Add Category</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                title="View and Manage Categories"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsManageOpen(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+              >
+                <LayoutList className="size-3.5" />
+                <span className="sr-only">View All Categories</span>
+              </button>
+
+              <button
+                type="button"
+                title="Add Category"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAddOpen(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                <span className="sr-only">Add Category</span>
+              </button>
+            </div>
           </SidebarGroupLabel>
 
           <CollapsibleContent>
@@ -123,31 +140,44 @@ export function NavCategory({
                   </button>
                 </div>
               ) : (
-                <SidebarMenu className="space-y-0.5">
-                  {categories.map((category) => {
-                    const isActive = currentCategoryId === category.id;
-                    return (
-                      <SidebarMenuItem key={category.id}>
-                        <SidebarMenuButton
-                          size="sm"
-                          isActive={isActive}
-                          onClick={() => handleSelectCategory(category)}
-                          className="group/cat flex items-center justify-between rounded-md h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span
-                              className="size-1.5 rounded-full shrink-0"
-                              style={{ backgroundColor: category.color || "#64748b" }}
-                            />
-                            <span className="truncate text-xs">
-                              {category.name}
-                            </span>
-                          </div>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
+                <>
+                  <SidebarMenu className="space-y-0.5">
+                    {categories.map((category) => {
+                      const isActive = currentCategoryId === category.id;
+                      return (
+                        <SidebarMenuItem key={category.id}>
+                          <SidebarMenuButton
+                            size="sm"
+                            isActive={isActive}
+                            onClick={() => handleSelectCategory(category)}
+                            className="group/cat flex items-center justify-between rounded-md h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="size-1.5 rounded-full shrink-0"
+                                style={{ backgroundColor: category.color || "#64748b" }}
+                              />
+                              <span className="truncate text-xs">
+                                {category.name}
+                              </span>
+                            </div>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+
+                  <div className="pt-1 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsManageOpen(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 rounded-md transition-colors cursor-pointer"
+                    >
+                      <LayoutList className="size-3 opacity-70" />
+                      <span>View all categories ({categories.length})</span>
+                    </button>
+                  </div>
+                </>
               )}
             </SidebarGroupContent>
           </CollapsibleContent>
@@ -158,6 +188,12 @@ export function NavCategory({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onCategoryCreated={handleCategoryCreated}
+      />
+
+      <ManageSchedulesCategoriesModal
+        isOpen={isManageOpen}
+        onClose={() => setIsManageOpen(false)}
+        defaultTab="categories"
       />
     </>
   );

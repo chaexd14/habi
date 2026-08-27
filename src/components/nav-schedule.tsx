@@ -19,9 +19,10 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Repeat, ChevronRight, CalendarRange } from "lucide-react";
+import { Plus, Repeat, ChevronRight, CalendarRange, LayoutList } from "lucide-react";
 
 import { AddScheduleModal } from "@/components/forms/add-schedule-modal";
+import { ManageSchedulesCategoriesModal } from "@/components/forms/manage-schedules-categories-modal";
 
 export interface NavScheduleProps extends React.ComponentPropsWithoutRef<typeof SidebarGroup> {
   schedules?: Schedule[];
@@ -47,6 +48,7 @@ export function NavSchedule({
   const error = propSchedules ? null : contextError;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const currentScheduleId = searchParams.get("scheduleId") || activeScheduleId || "";
 
@@ -84,18 +86,33 @@ export function NavSchedule({
               <span>Schedules</span>
             </CollapsibleTrigger>
 
-            <button
-              type="button"
-              title="Add Schedule"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAddOpen(true);
-              }}
-              className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
-            >
-              <Plus className="size-3.5" />
-              <span className="sr-only">Add Schedule</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                title="View and Manage Schedules"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsManageOpen(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+              >
+                <LayoutList className="size-3.5" />
+                <span className="sr-only">View All Schedules</span>
+              </button>
+
+              <button
+                type="button"
+                title="Add Schedule"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAddOpen(true);
+                }}
+                className="p-0.5 rounded text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent transition-colors cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                <span className="sr-only">Add Schedule</span>
+              </button>
+            </div>
           </SidebarGroupLabel>
 
           <CollapsibleContent>
@@ -124,28 +141,41 @@ export function NavSchedule({
                   </button>
                 </div>
               ) : (
-                <SidebarMenu className="space-y-0.5">
-                  {schedules.map((schedule) => {
-                    const isActive = currentScheduleId === schedule.id;
-                    return (
-                      <SidebarMenuItem key={schedule.id}>
-                        <SidebarMenuButton
-                          size="sm"
-                          isActive={isActive}
-                          onClick={() => handleSelectSchedule(schedule)}
-                          className="group/sch flex items-center justify-between rounded-md h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="size-1.5 rounded-full bg-foreground/60 shrink-0" />
-                            <span className="truncate text-xs">
-                              {schedule.title}
-                            </span>
-                          </div>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
+                <>
+                  <SidebarMenu className="space-y-0.5">
+                    {schedules.map((schedule) => {
+                      const isActive = currentScheduleId === schedule.id;
+                      return (
+                        <SidebarMenuItem key={schedule.id}>
+                          <SidebarMenuButton
+                            size="sm"
+                            isActive={isActive}
+                            onClick={() => handleSelectSchedule(schedule)}
+                            className="group/sch flex items-center justify-between rounded-md h-7.5 px-2 text-xs font-medium transition-colors hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="size-1.5 rounded-full bg-foreground/60 shrink-0" />
+                              <span className="truncate text-xs">
+                                {schedule.title}
+                              </span>
+                            </div>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+
+                  <div className="pt-1 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsManageOpen(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 rounded-md transition-colors cursor-pointer"
+                    >
+                      <LayoutList className="size-3 opacity-70" />
+                      <span>View all schedules ({schedules.length})</span>
+                    </button>
+                  </div>
+                </>
               )}
             </SidebarGroupContent>
           </CollapsibleContent>
@@ -156,6 +186,12 @@ export function NavSchedule({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onScheduleCreated={handleScheduleCreated}
+      />
+
+      <ManageSchedulesCategoriesModal
+        isOpen={isManageOpen}
+        onClose={() => setIsManageOpen(false)}
+        defaultTab="schedules"
       />
     </>
   );
