@@ -11,6 +11,7 @@ import {
   createScheduleItemApi,
   ScheduleConflictError,
 } from "@/lib/api/schedule-item";
+import { useSchedule } from "@/providers/schedule-provider";
 import { detectRoutineConflicts } from "@/lib/services/schedule-conflict";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function AddScheduleItemModal({
   onScheduleItemCreated,
   onOpenCreateSchedule,
 }: AddScheduleItemModalProps) {
+  const { addScheduleItem } = useSchedule();
   const [mounted, setMounted] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [schedItemTitle, setSchedItemTitle] = useState("");
@@ -161,7 +163,10 @@ export function AddScheduleItemModal({
 
       if (res.success && res.data) {
         const newItem: ScheduleItem = Array.isArray(res.data) ? res.data[0] : res.data;
-        onScheduleItemCreated(newItem);
+        addScheduleItem(newItem);
+        if (onScheduleItemCreated) {
+          onScheduleItemCreated(newItem);
+        }
         setSchedItemTitle("");
         setConflictWarnings([]);
         setPendingAllowConflict(false);

@@ -44,15 +44,26 @@ export async function GET(request: NextRequest) {
   try {
     const calendarItems = await fetchCalendarItemsCached(user.id, token);
 
-    return NextResponse.json({
-      success: true,
-      data: calendarItems,
-    }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({
-      success: false,
-      error: error?.message || "Failed to fetch calendar items"
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: calendarItems,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch calendar items",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -158,6 +169,7 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateTag("calendar-items", "default");
+  revalidateTag(`calendar-items-${user.id}`, "default");
 
   return NextResponse.json(
     {

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Category } from "@/types/category";
 import { createCategoryApi } from "@/lib/api/category";
+import { useSchedule } from "@/providers/schedule-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Loader2, Tag, Check } from "lucide-react";
@@ -32,6 +33,7 @@ export function AddCategoryForm({
   onClose,
   onCategoryCreated,
 }: AddCategoryFormProps) {
+  const { addCategory } = useSchedule();
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
@@ -62,7 +64,10 @@ export function AddCategoryForm({
 
       if (res.success && res.data) {
         const newCat = Array.isArray(res.data) ? res.data[0] : res.data;
-        onCategoryCreated(newCat);
+        addCategory(newCat);
+        if (onCategoryCreated) {
+          onCategoryCreated(newCat);
+        }
         setName("");
         setColor(PRESET_COLORS[0]);
         onClose();

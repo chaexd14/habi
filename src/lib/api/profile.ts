@@ -2,33 +2,11 @@ import { UserProfileResponse } from "@/types/profile";
 import { CreateProfileInput, UpdateProfileInput } from "@/lib/validations/profile";
 import createClient from "@/lib/supabase/client";
 
-const CACHE_KEY = "habi_user_profile_cache";
-
-let cachedProfileResponse: UserProfileResponse | null = null;
 let profilePromise: Promise<UserProfileResponse> | null = null;
 
 export async function getUserProfile(forceRefresh = false): Promise<UserProfileResponse> {
-  if (!forceRefresh) {
-    if (cachedProfileResponse) {
-      return cachedProfileResponse;
-    }
-
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem(CACHE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as UserProfileResponse;
-          cachedProfileResponse = parsed;
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Failed to read profile from sessionStorage:", e);
-      }
-    }
-
-    if (profilePromise) {
-      return profilePromise;
-    }
+  if (!forceRefresh && profilePromise) {
+    return profilePromise;
   }
 
   profilePromise = (async () => {
@@ -44,13 +22,13 @@ export async function getUserProfile(forceRefresh = false): Promise<UserProfileR
         };
       }
 
-      const url = forceRefresh ? `/api/profiles?t=${Date.now()}` : "/api/profiles";
+      const url = `/api/profiles?t=${Date.now()}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
         },
-        cache: forceRefresh ? "no-store" : "default",
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -59,16 +37,6 @@ export async function getUserProfile(forceRefresh = false): Promise<UserProfileR
       }
 
       const data: UserProfileResponse = await response.json();
-      if (data.success) {
-        cachedProfileResponse = data;
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          } catch (e) {
-            console.error("Failed to save profile to sessionStorage:", e);
-          }
-        }
-      }
       return data;
     } finally {
       profilePromise = null;
@@ -101,10 +69,8 @@ export async function createProfileApi(profileData: CreateProfileInput): Promise
     throw new Error(resJson.error || resJson.message || "Failed to create profile.");
   }
 
-  // Clear cache & re-fetch to sync cached state
   clearProfileCache();
   
-  // Format single inserted record into UserProfileResponse if needed
   const newProfile = resJson.data;
   const updatedResponse: UserProfileResponse = {
     success: true,
@@ -112,13 +78,8 @@ export async function createProfileApi(profileData: CreateProfileInput): Promise
     data: Array.isArray(newProfile) ? newProfile : [newProfile],
   };
 
-  cachedProfileResponse = updatedResponse;
   if (typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(updatedResponse));
-    } catch (e) {
-      console.error("Failed to save new profile to sessionStorage:", e);
-    }
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "user-profile" } }));
   }
 
   return updatedResponse;
@@ -159,26 +120,13 @@ export async function updateProfileApi(
     data: Array.isArray(updatedProfile) ? updatedProfile : [updatedProfile],
   };
 
-  cachedProfileResponse = updatedResponse;
   if (typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(updatedResponse));
-    } catch (e) {
-      console.error("Failed to save updated profile to sessionStorage:", e);
-    }
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "user-profile" } }));
   }
 
   return updatedResponse;
 }
 
 export function clearProfileCache() {
-  cachedProfileResponse = null;
   profilePromise = null;
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.removeItem(CACHE_KEY);
-    } catch (e) {
-      // ignore
-    }
-  }
 }

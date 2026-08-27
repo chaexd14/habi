@@ -47,10 +47,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }, { status: 404 })
   }
 
-  return NextResponse.json({
-    success: true,
-    data: calendarItem,
-  }, { status: 200 })
+  return NextResponse.json(
+    {
+      success: true,
+      data: calendarItem,
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
+  );
 }
 
 // PATCH /api/calendar-items/[id]
@@ -80,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }, { status: 400 })
   }
 
-  const { allow_conflict, ...updates } = result.data;
+  const { allow_conflict: _allow_conflict, ...updates } = result.data;
 
   // Update the calendar item
   const { data: calendarItem, error: updateError } = await supabase
@@ -105,7 +113,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }, { status: 404 })
   }
 
-  revalidateTag("schedules", "default");
+  revalidateTag("calendar-items", "default");
+  if (calendarItem.user_id) {
+    revalidateTag(`calendar-items-${calendarItem.user_id}`, "default");
+  }
 
   return NextResponse.json({
     success: true,
@@ -129,6 +140,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const token = authHeader.substring(7)
   const supabase = createApiClient(token)
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Delete the calendar item
   const { data: deletedCalendarItem, error: deleteError } = await supabase
     .from("calendar_items")
@@ -151,7 +164,10 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     }, { status: 404 })
   }
 
-  revalidateTag("schedules", "default");
+  revalidateTag("calendar-items", "default");
+  if (user) {
+    revalidateTag(`calendar-items-${user.id}`, "default");
+  }
 
   return NextResponse.json({
     success: true,

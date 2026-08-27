@@ -60,7 +60,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       success: true,
       data: scheduleItem,
     },
-    { status: 200 }
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
   );
 }
 
@@ -82,6 +87,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const token = authHeader.substring(7);
   const supabase = createApiClient(token);
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Parse and validate request body
   const body = await request.json();
 
@@ -98,7 +105,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const { allow_conflict, ...updates } = result.data;
+  const { allow_conflict: _allow_conflict, ...updates } = result.data;
 
   // Update schedule item
   const { data: scheduleItem, error: updateError } = await supabase
@@ -130,6 +137,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   revalidateTag("schedule-items", "default");
+  revalidateTag("schedules", "default");
+  if (user) {
+    revalidateTag(`schedule-items-${user.id}`, "default");
+    revalidateTag(`schedules-${user.id}`, "default");
+  }
 
   return NextResponse.json(
     {
@@ -159,6 +171,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const token = authHeader.substring(7);
   const supabase = createApiClient(token);
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Delete schedule item
   const { data: deletedScheduleItem, error: deleteError } = await supabase
     .from("schedule_items")
@@ -187,7 +201,12 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  revalidateTag("schedule-items", "default")
+  revalidateTag("schedule-items", "default");
+  revalidateTag("schedules", "default");
+  if (user) {
+    revalidateTag(`schedule-items-${user.id}`, "default");
+    revalidateTag(`schedules-${user.id}`, "default");
+  }
 
   return NextResponse.json(
     {

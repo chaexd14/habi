@@ -1,34 +1,12 @@
 import { CategoryResponse } from "@/types/category";
-import { CreateCategorySchema } from "@/lib/validations/category";
+import { CreateCategorySchema, UpdateCategorySchema } from "@/lib/validations/category";
 import createClient from "@/lib/supabase/client";
 
-const CACHE_KEY = "habi_categories_cache";
-
-let cachedCategoryResponse: CategoryResponse | null = null;
 let categoryPromise: Promise<CategoryResponse> | null = null;
 
 export async function getCategories(forceRefresh = false): Promise<CategoryResponse> {
-  if (!forceRefresh) {
-    if (cachedCategoryResponse) {
-      return cachedCategoryResponse;
-    }
-
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem(CACHE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as CategoryResponse;
-          cachedCategoryResponse = parsed;
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Failed to read categories from sessionStorage:", e);
-      }
-    }
-
-    if (categoryPromise) {
-      return categoryPromise;
-    }
+  if (!forceRefresh && categoryPromise) {
+    return categoryPromise;
   }
 
   categoryPromise = (async () => {
@@ -46,13 +24,13 @@ export async function getCategories(forceRefresh = false): Promise<CategoryRespo
         };
       }
 
-      const url = forceRefresh ? `/api/categories?t=${Date.now()}` : "/api/categories";
+      const url = `/api/categories?t=${Date.now()}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-        cache: forceRefresh ? "no-store" : "default",
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -61,16 +39,6 @@ export async function getCategories(forceRefresh = false): Promise<CategoryRespo
       }
 
       const data: CategoryResponse = await response.json();
-      if (data.success) {
-        cachedCategoryResponse = data;
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          } catch (e) {
-            console.error("Failed to save categories to sessionStorage:", e);
-          }
-        }
-      }
       return data;
     } finally {
       categoryPromise = null;
@@ -108,17 +76,77 @@ export async function createCategoryApi(
   }
 
   clearCategoryCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "categories" } }));
+  }
+  return resJson;
+}
+
+export async function updateCategoryApi(
+  id: string,
+  input: UpdateCategorySchema
+): Promise<CategoryResponse> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("You must be signed in to update a category.");
+  }
+
+  const response = await fetch(`/api/categories/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const resJson = await response.json();
+
+  if (!response.ok || !resJson.success) {
+    throw new Error(resJson.error || "Failed to update category.");
+  }
+
+  clearCategoryCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "categories" } }));
+  }
+  return resJson;
+}
+
+export async function deleteCategoryApi(id: string): Promise<CategoryResponse> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("You must be signed in to delete a category.");
+  }
+
+  const response = await fetch(`/api/categories/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+
+  const resJson = await response.json();
+
+  if (!response.ok || !resJson.success) {
+    throw new Error(resJson.error || "Failed to delete category.");
+  }
+
+  clearCategoryCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "categories" } }));
+  }
   return resJson;
 }
 
 export function clearCategoryCache() {
-  cachedCategoryResponse = null;
   categoryPromise = null;
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.removeItem(CACHE_KEY);
-    } catch (e) {
-      // ignore
-    }
-  }
 }

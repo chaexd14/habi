@@ -2,14 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { NotificationItem } from "@/types/notification";
-import { getCalendarItems } from "@/lib/api/calendar-item";
-import { getScheduleItems } from "@/lib/api/schedule-item";
-import { getSchedules } from "@/lib/api/schedule";
 import { CalendarItem } from "@/types/calendar-item";
 import { Schedule, ScheduleItem } from "@/types/schedule";
 import { evaluateNotifications } from "@/lib/utils/notification-checker";
-import { useProfile } from "@/providers/profile-provider";
 import { useSettings } from "@/providers/settings-provider";
+import { useSchedule } from "@/providers/schedule-provider";
 
 import { NotificationDetailModal } from "@/components/notifications/notification-detail-modal";
 
@@ -53,7 +50,6 @@ const NotificationContext = createContext<NotificationContextType>({
 });
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { userProfile } = useProfile();
   const { settings } = useSettings();
   
   // Lazy state initialization
@@ -211,45 +207,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     [triggerToast, settings.notificationAlert, settings.timeFormat]
   );
 
+  const { schedules: contextSchedules, calendarItems: contextCalendarItems, scheduleItems: contextScheduleItems, refetchAll } = useSchedule();
+
+  // Sync refs and evaluate notifications when shared planner state changes
+  useEffect(() => {
+    calendarItemsRef.current = contextCalendarItems;
+    scheduleItemsRef.current = contextScheduleItems;
+    schedulesRef.current = contextSchedules;
+    if (contextCalendarItems.length > 0 || contextScheduleItems.length > 0 || contextSchedules.length > 0) {
+      checkNotifications(contextCalendarItems, contextScheduleItems, contextSchedules);
+    }
+  }, [contextCalendarItems, contextScheduleItems, contextSchedules, checkNotifications]);
+
   // Fetch data and evaluate
   const refreshNotifications = useCallback(async () => {
     try {
-      const [calRes, schedItemsRes, schedRes] = await Promise.all([
-        getCalendarItems(),
-        getScheduleItems(),
-        getSchedules(),
-      ]);
-
-      if (calRes.success && Array.isArray(calRes.data)) {
-        calendarItemsRef.current = calRes.data;
-      }
-      if (schedItemsRes.success && Array.isArray(schedItemsRes.data)) {
-        scheduleItemsRef.current = schedItemsRes.data;
-      }
-      if (schedRes.success && Array.isArray(schedRes.data)) {
-        schedulesRef.current = schedRes.data;
-      }
-
-      checkNotifications(
-        calendarItemsRef.current,
-        scheduleItemsRef.current,
-        schedulesRef.current
-      );
+      await refetchAll(true);
     } catch (err) {
       console.error("Failed to fetch data for notifications:", err);
     }
-  }, [checkNotifications]);
-
-  // Trigger notifications immediately upon user login / profile load
-  useEffect(() => {
-    if (userProfile?.id) {
-      refreshNotifications();
-    }
-  }, [userProfile?.id, refreshNotifications]);
+  }, [refetchAll]);
 
   // Periodic loop (check every 30 seconds)
   useEffect(() => {
-    refreshNotifications();
     const interval = setInterval(() => {
       if (calendarItemsRef.current.length > 0 || scheduleItemsRef.current.length > 0) {
         checkNotifications(
@@ -257,13 +237,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           scheduleItemsRef.current,
           schedulesRef.current
         );
-      } else {
-        refreshNotifications();
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refreshNotifications, checkNotifications]);
+  }, [checkNotifications]);
 
   const markAsRead = useCallback(
     (id: string) => {

@@ -50,13 +50,18 @@ export async function GET(request: NextRequest) {
         success: true,
         data: schedules,
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || "Failed to fetch schedules.",
+        error: error instanceof Error ? error.message : "Failed to fetch schedules.",
       },
       { status: 500 }
     );
@@ -155,6 +160,7 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateTag("schedules", "default");
+  revalidateTag(`schedules-${user.id}`, "default");
 
   // Return the new schedule
   return NextResponse.json(

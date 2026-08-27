@@ -1,34 +1,14 @@
 import { CalendarItemResponse } from "@/types/calendar-item";
 import { CreateCalendarItemInput } from "@/lib/validations/calendar-item";
 import createClient from "@/lib/supabase/client";
+import { ScheduleConflictError } from "@/lib/api/schedule-item";
+import type { ConflictDetail } from "@/lib/services/schedule-conflict";
 
-const CACHE_KEY = "habi_calendar_items_cache";
-
-let cachedCalendarItemResponse: CalendarItemResponse | null = null;
 let calendarItemPromise: Promise<CalendarItemResponse> | null = null;
 
 export async function getCalendarItems(forceRefresh = false): Promise<CalendarItemResponse> {
-  if (!forceRefresh) {
-    if (cachedCalendarItemResponse) {
-      return cachedCalendarItemResponse;
-    }
-
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem(CACHE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as CalendarItemResponse;
-          cachedCalendarItemResponse = parsed;
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Failed to read calendar items from sessionStorage:", e);
-      }
-    }
-
-    if (calendarItemPromise) {
-      return calendarItemPromise;
-    }
+  if (!forceRefresh && calendarItemPromise) {
+    return calendarItemPromise;
   }
 
   calendarItemPromise = (async () => {
@@ -46,13 +26,13 @@ export async function getCalendarItems(forceRefresh = false): Promise<CalendarIt
         };
       }
 
-      const url = forceRefresh ? `/api/calendar-items?t=${Date.now()}` : "/api/calendar-items";
+      const url = `/api/calendar-items?t=${Date.now()}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-        cache: forceRefresh ? "no-store" : "default",
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -61,16 +41,6 @@ export async function getCalendarItems(forceRefresh = false): Promise<CalendarIt
       }
 
       const data: CalendarItemResponse = await response.json();
-      if (data.success) {
-        cachedCalendarItemResponse = data;
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          } catch (e) {
-            console.error("Failed to save calendar items to sessionStorage:", e);
-          }
-        }
-      }
       return data;
     } finally {
       calendarItemPromise = null;
@@ -79,9 +49,6 @@ export async function getCalendarItems(forceRefresh = false): Promise<CalendarIt
 
   return calendarItemPromise;
 }
-
-import { ScheduleConflictError } from "@/lib/api/schedule-item";
-import type { ConflictDetail } from "@/lib/services/schedule-conflict";
 
 export async function createCalendarItemApi(
   input: CreateCalendarItemInput
@@ -117,9 +84,11 @@ export async function createCalendarItemApi(
   }
 
   clearCalendarItemCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "calendar-items" } }));
+  }
   return resJson;
 }
-
 
 export async function updateCalendarItemApi(
   id: string,
@@ -155,8 +124,10 @@ export async function updateCalendarItemApi(
     throw new Error(resJson.error || "Failed to update calendar event.");
   }
 
-
   clearCalendarItemCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "calendar-items" } }));
+  }
   return resJson;
 }
 
@@ -184,17 +155,12 @@ export async function deleteCalendarItemApi(id: string): Promise<CalendarItemRes
   }
 
   clearCalendarItemCache();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habi:data-invalidated", { detail: { type: "calendar-items" } }));
+  }
   return resJson;
 }
 
 export function clearCalendarItemCache() {
-  cachedCalendarItemResponse = null;
   calendarItemPromise = null;
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.removeItem(CACHE_KEY);
-    } catch (e) {
-      // ignore
-    }
-  }
 }

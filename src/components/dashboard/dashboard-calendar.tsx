@@ -3,14 +3,8 @@
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CalendarItem } from "@/types/calendar-item";
-import { Schedule, ScheduleItem, DayOfWeek } from "@/types/schedule";
-import { Category } from "@/types/category";
-
-import { getCalendarItems } from "@/lib/api/calendar-item";
-import { getSchedules } from "@/lib/api/schedule";
-import { getScheduleItems } from "@/lib/api/schedule-item";
-import { getCategories } from "@/lib/api/category";
+import { DayOfWeek } from "@/types/schedule";
+import { useSchedule } from "@/providers/schedule-provider";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -123,6 +117,21 @@ export function DashboardCalendar() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const {
+    schedules,
+    categories,
+    calendarItems,
+    scheduleItems,
+    loading,
+    addCalendarItem,
+    updateCalendarItem,
+    removeCalendarItem,
+    addSchedule,
+    addScheduleItem,
+    updateScheduleItem,
+    removeScheduleItem,
+  } = useSchedule();
+
   const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
@@ -150,7 +159,7 @@ export function DashboardCalendar() {
         setViewMode("week");
       }
     }
-  }, [urlTypeParam]);
+  }, [urlTypeParam, viewMode]);
 
   useEffect(() => {
     setSelectedScheduleFilter(urlScheduleIdParam);
@@ -172,13 +181,6 @@ export function DashboardCalendar() {
     }
   }, [urlDateParam, sourceFilter]);
 
-  // Data states
-  const [calendarItems, setCalendarItems] = useState<CalendarItem[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-
   // Add & Edit Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
@@ -190,50 +192,15 @@ export function DashboardCalendar() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [calRes, schedRes, schedItemsRes, catRes] = await Promise.all([
-          getCalendarItems(),
-          getSchedules(),
-          getScheduleItems(),
-          getCategories(),
-        ]);
-
-        if (calRes.success && Array.isArray(calRes.data)) {
-          setCalendarItems(calRes.data);
-        }
-        if (schedRes.success && Array.isArray(schedRes.data)) {
-          setSchedules(schedRes.data);
-        }
-        if (schedItemsRes.success && Array.isArray(schedItemsRes.data)) {
-          setScheduleItems(schedItemsRes.data);
-        }
-        if (catRes.success && Array.isArray(catRes.data)) {
-          setCategories(catRes.data);
-        }
-      } catch (err) {
-        console.error("Failed to load dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-  }, [mounted]);
-
   // Lookup maps
   const categoryMap = useMemo(() => {
-    const map = new Map<string, Category>();
+    const map = new Map<string, (typeof categories)[0]>();
     categories.forEach((cat) => map.set(cat.id, cat));
     return map;
   }, [categories]);
 
   const scheduleMap = useMemo(() => {
-    const map = new Map<string, Schedule>();
+    const map = new Map<string, (typeof schedules)[0]>();
     schedules.forEach((sch) => map.set(sch.id, sch));
     return map;
   }, [schedules]);
@@ -353,7 +320,6 @@ export function DashboardCalendar() {
     },
     [calendarItems, scheduleItems, scheduleMap, sourceFilter, selectedScheduleFilter, selectedCategoryFilter]
   );
-
 
   // Month Grid Days
   const monthDays = useMemo(() => {
@@ -570,16 +536,16 @@ export function DashboardCalendar() {
         calendarItems={calendarItems}
         scheduleItems={scheduleItems}
         initialDayIso={getIsoDateString(currentDate)}
-        onCalendarItemCreated={(newItem) => setCalendarItems((prev) => [...prev, newItem])}
-        onScheduleCreated={(newSched) => setSchedules((prev) => [...prev, newSched])}
-        onScheduleItemCreated={(newItem) => setScheduleItems((prev) => [...prev, newItem])}
+        onCalendarItemCreated={addCalendarItem}
+        onScheduleCreated={addSchedule}
+        onScheduleItemCreated={addScheduleItem}
         onOpenCreateSchedule={() => setIsAddScheduleOpen(true)}
       />
 
       <AddScheduleModal
         isOpen={isAddScheduleOpen}
         onClose={() => setIsAddScheduleOpen(false)}
-        onScheduleCreated={(newSched) => setSchedules((prev) => [...prev, newSched])}
+        onScheduleCreated={addSchedule}
       />
 
       <EditEventModal
@@ -590,18 +556,10 @@ export function DashboardCalendar() {
         scheduleItems={scheduleItems}
         schedules={schedules}
         categories={categories}
-        onCalendarItemUpdated={(updated) =>
-          setCalendarItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-        }
-        onCalendarItemDeleted={(deletedId) =>
-          setCalendarItems((prev) => prev.filter((i) => i.id !== deletedId))
-        }
-        onScheduleItemUpdated={(updated) =>
-          setScheduleItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-        }
-        onScheduleItemDeleted={(deletedId) =>
-          setScheduleItems((prev) => prev.filter((i) => i.id !== deletedId))
-        }
+        onCalendarItemUpdated={updateCalendarItem}
+        onCalendarItemDeleted={removeCalendarItem}
+        onScheduleItemUpdated={updateScheduleItem}
+        onScheduleItemDeleted={removeScheduleItem}
       />
 
     </div>

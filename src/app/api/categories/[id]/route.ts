@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { UpdateCategorySchema } from "@/lib/validations/category";
@@ -8,23 +8,26 @@ type RouteContext = {
   params: Promise<{
     id: string;
   }>;
-}
+};
 
 // GET /api/categories/[id]
 export async function GET(request: NextRequest, context: RouteContext) {
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
   }
 
-  const token = authHeader.substring(7)
-  const supabase = createApiClient(token)
+  const token = authHeader.substring(7);
+  const supabase = createApiClient(token);
 
-  const { id } = await context.params
+  const { id } = await context.params;
 
   const { data: category, error: categoryError } = await supabase
     .from("categories")
@@ -36,8 +39,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        error: categoryError.message
-      }, { status: 500 }
+        error: categoryError.message,
+      },
+      { status: 500 }
     );
   }
 
@@ -45,8 +49,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        error: "Category not found"
-      }, { status: 404 }
+        error: "Category not found",
+      },
+      { status: 404 }
     );
   }
 
@@ -54,24 +59,37 @@ export async function GET(request: NextRequest, context: RouteContext) {
     {
       success: true,
       data: category,
-    }, { status: 200 }
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
   );
 }
 
 // PATCH /api/categories/[id]
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
   }
 
-  const token = authHeader.substring(7)
-  const supabase = createApiClient(token)
+  const token = authHeader.substring(7);
+  const supabase = createApiClient(token);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Parse and validate request body
   const body = await request.json();
@@ -103,7 +121,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        error: updateError.message
+        error: updateError.message,
       },
       { status: 500 }
     );
@@ -113,10 +131,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        error: "Category not found"
+        error: "Category not found",
       },
       { status: 404 }
     );
+  }
+
+  revalidateTag("categories", "default");
+  if (user) {
+    revalidateTag(`categories-${user.id}`, "default");
   }
 
   return NextResponse.json(
@@ -132,17 +155,24 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 // DELETE /api/categories/[id]
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const authHeader = request.headers.get("Authorization")
+  const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json({
-      success: false,
-      error: "Unauthorized"
-    }, { status: 401 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
   }
 
-  const token = authHeader.substring(7)
-  const supabase = createApiClient(token)
+  const token = authHeader.substring(7);
+  const supabase = createApiClient(token);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Delete the category
   const { error } = await supabase
@@ -156,10 +186,15 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message
+        error: error.message,
       },
       { status: 500 }
     );
+  }
+
+  revalidateTag("categories", "default");
+  if (user) {
+    revalidateTag(`categories-${user.id}`, "default");
   }
 
   return NextResponse.json(

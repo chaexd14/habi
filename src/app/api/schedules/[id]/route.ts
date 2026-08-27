@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createApiClient } from "@/lib/supabase/api";
 
 import { UpdateScheduleSchema } from "@/lib/validations/schedule";
@@ -46,10 +47,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }, { status: 404 })
   }
 
-  return NextResponse.json({
-    success: true,
-    data: schedule,
-  }, { status: 200 })
+  return NextResponse.json(
+    {
+      success: true,
+      data: schedule,
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
+  );
 }
 
 // PATCH /api/schedules/[id]
@@ -113,6 +122,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
+  revalidateTag("schedules", "default");
+  if (schedule.user_id) {
+    revalidateTag(`schedules-${schedule.user_id}`, "default");
+  }
+
   return NextResponse.json(
     {
       success: true,
@@ -137,6 +151,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
   const token = authHeader.substring(7)
   const supabase = createApiClient(token)
+
+  const { data: { user } } = await supabase.auth.getUser();
 
   // Delete the schedule
   const { data: deletedSchedule, error: deleteError } = await supabase
@@ -164,6 +180,13 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       },
       { status: 404 }
     );
+  }
+
+  revalidateTag("schedules", "default");
+  revalidateTag("schedule-items", "default");
+  if (user) {
+    revalidateTag(`schedules-${user.id}`, "default");
+    revalidateTag(`schedule-items-${user.id}`, "default");
   }
 
   return NextResponse.json(

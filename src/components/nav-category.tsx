@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Category } from "@/types/category";
-import { getCategories } from "@/lib/api/category";
+import { useSchedule } from "@/providers/schedule-provider";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -31,7 +31,7 @@ export interface NavCategoryProps extends React.ComponentPropsWithoutRef<typeof 
 }
 
 export function NavCategory({
-  categories: initialCategories,
+  categories: propCategories,
   activeCategoryId,
   onSelectCategory,
   onCategoryCreated,
@@ -40,10 +40,12 @@ export function NavCategory({
 }: NavCategoryProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { categories: contextCategories, loading: contextLoading, error: contextError, addCategory } = useSchedule();
 
-  const [categories, setCategories] = useState<Category[]>(initialCategories || []);
-  const [loading, setLoading] = useState(!initialCategories);
-  const [error, setError] = useState<string | null>(null);
+  const categories = propCategories || contextCategories;
+  const loading = propCategories ? false : contextLoading;
+  const error = propCategories ? null : contextError;
+
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const currentCategoryId = searchParams.get("categoryId") || activeCategoryId || "";
@@ -63,33 +65,8 @@ export function NavCategory({
     router.push(`/dashboard?${params.toString()}`);
   };
 
-  useEffect(() => {
-    if (initialCategories) {
-      setCategories(initialCategories);
-      setLoading(false);
-      return;
-    }
-
-    async function fetchUserCategories() {
-      try {
-        setLoading(true);
-        const res = await getCategories();
-        if (res.success && Array.isArray(res.data)) {
-          setCategories(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to load categories:", err);
-        setError(err instanceof Error ? err.message : "Failed to load categories");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUserCategories();
-  }, [initialCategories]);
-
   const handleCategoryCreated = (newCategory: Category) => {
-    setCategories((prev) => [...prev, newCategory]);
+    addCategory(newCategory);
     if (onCategoryCreated) {
       onCategoryCreated(newCategory);
     }

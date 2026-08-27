@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Schedule } from "@/types/schedule";
-import { getSchedules } from "@/lib/api/schedule";
+import { useSchedule } from "@/providers/schedule-provider";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -31,7 +31,7 @@ export interface NavScheduleProps extends React.ComponentPropsWithoutRef<typeof 
 }
 
 export function NavSchedule({
-  schedules: initialSchedules,
+  schedules: propSchedules,
   activeScheduleId,
   onSelectSchedule,
   onScheduleCreated,
@@ -40,41 +40,18 @@ export function NavSchedule({
 }: NavScheduleProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { schedules: contextSchedules, loading: contextLoading, error: contextError, addSchedule } = useSchedule();
 
-  const [schedules, setSchedules] = useState<Schedule[]>(initialSchedules || []);
-  const [loading, setLoading] = useState(!initialSchedules);
-  const [error, setError] = useState<string | null>(null);
+  const schedules = propSchedules || contextSchedules;
+  const loading = propSchedules ? false : contextLoading;
+  const error = propSchedules ? null : contextError;
+
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const currentScheduleId = searchParams.get("scheduleId") || activeScheduleId || "";
 
-  useEffect(() => {
-    if (initialSchedules) {
-      setSchedules(initialSchedules);
-      setLoading(false);
-      return;
-    }
-
-    async function fetchUserSchedules() {
-      try {
-        setLoading(true);
-        const res = await getSchedules();
-        if (res.success && Array.isArray(res.data)) {
-          setSchedules(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to load schedules:", err);
-        setError(err instanceof Error ? err.message : "Failed to load schedules");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUserSchedules();
-  }, [initialSchedules]);
-
   const handleScheduleCreated = (newSchedule: Schedule) => {
-    setSchedules((prev) => [...prev, newSchedule]);
+    addSchedule(newSchedule);
     if (onScheduleCreated) {
       onScheduleCreated(newSchedule);
     }

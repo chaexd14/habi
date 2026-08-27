@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Schedule } from "@/types/schedule";
 import { createScheduleApi } from "@/lib/api/schedule";
+import { useSchedule } from "@/providers/schedule-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -45,6 +46,7 @@ export function AddScheduleModal({
   onClose,
   onScheduleCreated,
 }: AddScheduleModalProps) {
+  const { addSchedule } = useSchedule();
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -133,7 +135,10 @@ export function AddScheduleModal({
 
       if (res.success && res.data) {
         const newSched = Array.isArray(res.data) ? res.data[0] : res.data;
-        onScheduleCreated(newSched);
+        addSchedule(newSched);
+        if (onScheduleCreated) {
+          onScheduleCreated(newSched);
+        }
         setTitle("");
         setDescription("");
         setDurationOption("ongoing");

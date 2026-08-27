@@ -45,15 +45,26 @@ export async function GET(request: NextRequest) {
   try {
     const scheduleItems = await fetchScheduleItemsCached(user.id, token);
 
-    return NextResponse.json({
-      success: true,
-      data: scheduleItems,
-    }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({
-      success: false,
-      error: error?.message || "Failed to fetch schedule items",
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: scheduleItems,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch schedule items",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -161,7 +172,9 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateTag("schedule-items", "default");
+  revalidateTag(`schedule-items-${user.id}`, "default");
   revalidateTag("schedules", "default");
+  revalidateTag(`schedules-${user.id}`, "default");
 
   return NextResponse.json(
     {

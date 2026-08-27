@@ -47,13 +47,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         success: true,
         data: profiles[0],
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || "Failed to fetch cached user profile",
+        error: error instanceof Error ? error.message : "Failed to fetch cached user profile",
       },
       { status: 500 }
     );
