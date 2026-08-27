@@ -116,15 +116,27 @@ export function EditEventModal({
     if (item.type === "schedule_item") {
       const sItem = scheduleItems.find((s) => s.id === item.rawId);
       if (sItem) {
-        if (Array.isArray(sItem.days)) {
-          setEditSelectedDays(sItem.days);
+        const itemDays: DayOfWeek[] = Array.isArray(sItem.days)
+          ? sItem.days
+          : typeof sItem.days === "string"
+          ? (() => {
+              try {
+                const parsed = JSON.parse(sItem.days);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch {
+                return [];
+              }
+            })()
+          : [];
+        if (itemDays.length > 0) {
+          setEditSelectedDays(itemDays);
         }
         setEditCategoryId(sItem.category_id || item.categoryId || "");
       }
     }
   }, [item, scheduleItems]);
 
-  if (!isOpen || !item) return null;
+  if (!isOpen || !item || !mounted) return null;
 
   const toggleEditSchedDay = (day: DayOfWeek) => {
     setConflictWarnings([]);

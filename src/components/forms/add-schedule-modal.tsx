@@ -48,10 +48,10 @@ export function AddScheduleModal({
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [durationOption, setDurationOption] = useState<DurationOption>("7");
+  const [durationOption, setDurationOption] = useState<DurationOption>("ongoing");
   const [customDaysCount, setCustomDaysCount] = useState("30");
-  const [startDate, setStartDate] = useState(getTodayIso());
-  const [endDate, setEndDate] = useState(computeEndDate(getTodayIso(), 7));
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -62,21 +62,24 @@ export function AddScheduleModal({
 
   // Update End Date whenever start date or duration option changes
   useEffect(() => {
-    if (!startDate) return;
+    if (durationOption === "ongoing") {
+      setEndDate("");
+      return;
+    }
+
+    const baseStart = startDate || getTodayIso();
 
     if (durationOption === "3") {
-      setEndDate(computeEndDate(startDate, 3));
+      setEndDate(computeEndDate(baseStart, 3));
     } else if (durationOption === "7") {
-      setEndDate(computeEndDate(startDate, 7));
+      setEndDate(computeEndDate(baseStart, 7));
     } else if (durationOption === "14") {
-      setEndDate(computeEndDate(startDate, 14));
+      setEndDate(computeEndDate(baseStart, 14));
     } else if (durationOption === "custom_days") {
       const days = parseInt(customDaysCount, 10);
       if (!isNaN(days) && days > 0) {
-        setEndDate(computeEndDate(startDate, days));
+        setEndDate(computeEndDate(baseStart, days));
       }
-    } else if (durationOption === "ongoing") {
-      setEndDate("");
     }
   }, [startDate, durationOption, customDaysCount]);
 
@@ -84,15 +87,22 @@ export function AddScheduleModal({
 
   const handleDurationSelect = (opt: DurationOption) => {
     setDurationOption(opt);
+    const baseStart = startDate || getTodayIso();
     if (opt === "3") {
-      setEndDate(computeEndDate(startDate || getTodayIso(), 3));
+      if (!startDate) setStartDate(baseStart);
+      setEndDate(computeEndDate(baseStart, 3));
     } else if (opt === "7") {
-      setEndDate(computeEndDate(startDate || getTodayIso(), 7));
+      if (!startDate) setStartDate(baseStart);
+      setEndDate(computeEndDate(baseStart, 7));
     } else if (opt === "14") {
-      setEndDate(computeEndDate(startDate || getTodayIso(), 14));
+      if (!startDate) setStartDate(baseStart);
+      setEndDate(computeEndDate(baseStart, 14));
     } else if (opt === "custom_days") {
+      if (!startDate) setStartDate(baseStart);
       const days = parseInt(customDaysCount, 10) || 30;
-      setEndDate(computeEndDate(startDate || getTodayIso(), days));
+      setEndDate(computeEndDate(baseStart, days));
+    } else if (opt === "custom_range") {
+      if (!startDate) setStartDate(baseStart);
     } else if (opt === "ongoing") {
       setEndDate("");
     }
@@ -117,8 +127,8 @@ export function AddScheduleModal({
       const res = await createScheduleApi({
         title: title.trim(),
         description: description.trim() || undefined,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
+        start_date: durationOption === "ongoing" ? undefined : (startDate || undefined),
+        end_date: durationOption === "ongoing" ? undefined : (endDate || undefined),
       });
 
       if (res.success && res.data) {
@@ -126,9 +136,9 @@ export function AddScheduleModal({
         onScheduleCreated(newSched);
         setTitle("");
         setDescription("");
-        setDurationOption("7");
-        setStartDate(getTodayIso());
-        setEndDate(computeEndDate(getTodayIso(), 7));
+        setDurationOption("ongoing");
+        setStartDate("");
+        setEndDate("");
         onClose();
       } else {
         setFormError(res.error || "Failed to create schedule.");
@@ -325,7 +335,11 @@ export function AddScheduleModal({
                 </span>
               ) : (
                 <span>
-                  Recurring schedule starts on <strong className="text-foreground">{startDate || "creation"}</strong> (no end date).
+                  {startDate ? (
+                    <>Recurring schedule starts on <strong className="text-foreground">{startDate}</strong> (ongoing routine).</>
+                  ) : (
+                    <>Ongoing recurring weekly schedule (repeats indefinitely).</>
+                  )}
                 </span>
               )}
             </div>

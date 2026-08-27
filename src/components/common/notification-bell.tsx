@@ -61,6 +61,7 @@ export function NotificationBell() {
     markAsRead,
     markAllAsRead,
     clearNotifications,
+    openNotificationModal,
   } = useNotifications();
 
   return (
@@ -69,10 +70,18 @@ export function NotificationBell() {
       {toastNotification && (
         <div
           role="alert"
+          tabIndex={0}
           aria-live="polite"
-          className="fixed top-3 right-3 z-50 max-w-sm w-full bg-card border border-border shadow-lg rounded-lg p-3.5 flex items-start gap-3 animate-in slide-in-from-top-2 duration-150"
+          onClick={() => openNotificationModal(toastNotification)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openNotificationModal(toastNotification);
+            }
+          }}
+          className="fixed top-3 right-3 z-50 max-w-sm w-full bg-card border border-border/80 shadow-xl rounded-xl p-3.5 flex items-start gap-3 animate-in slide-in-from-top-2 duration-150 cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-all select-none"
         >
-          <div className="p-2 rounded-md bg-muted text-foreground shrink-0">
+          <div className="p-2 rounded-lg bg-muted text-foreground shrink-0">
             <BellRing className="size-4" />
           </div>
           <div className="flex-1 min-w-0">
@@ -88,9 +97,12 @@ export function NotificationBell() {
           </div>
           <button
             type="button"
-            onClick={dismissToast}
+            onClick={(e) => {
+              e.stopPropagation();
+              dismissToast();
+            }}
             aria-label="Dismiss notification alert"
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted cursor-pointer"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted cursor-pointer shrink-0"
           >
             <X className="size-3.5" />
           </button>
@@ -198,15 +210,15 @@ export function NotificationBell() {
                   key={item.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => markAsRead(item.id)}
+                  onClick={() => openNotificationModal(item)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      markAsRead(item.id);
+                      openNotificationModal(item);
                     }
                   }}
                   className={cn(
-                    "p-3 flex items-start gap-2.5 cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none",
+                    "p-3 flex items-start gap-2.5 cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none select-none",
                     !item.read ? "bg-muted/20 font-normal" : "opacity-70"
                   )}
                 >

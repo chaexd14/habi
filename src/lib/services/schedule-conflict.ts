@@ -37,9 +37,9 @@ export function doTimeRangesOverlap(
     return true;
   }
 
-  let startA = timeToMinutes(startAStr);
+  const startA = timeToMinutes(startAStr);
   let endA = timeToMinutes(endAStr);
-  let startB = timeToMinutes(startBStr);
+  const startB = timeToMinutes(startBStr);
   let endB = timeToMinutes(endBStr);
 
   if (endA <= startA) endA += 24 * 60;

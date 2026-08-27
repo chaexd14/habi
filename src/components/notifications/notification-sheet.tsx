@@ -20,6 +20,7 @@ import {
   Zap,
   Volume2,
   Inbox,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationType } from "@/types/notification";
@@ -66,6 +67,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
     markAsRead,
     markAllAsRead,
     clearNotifications,
+    openNotificationModal,
   } = useNotifications();
 
   const [activeFilter, setActiveFilter] = useState<"all" | "unread">("all");
@@ -218,16 +220,17 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                 key={item.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => markAsRead(item.id)}
+                aria-label={`View notification details for ${item.title}`}
+                onClick={() => openNotificationModal(item)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    markAsRead(item.id);
+                    openNotificationModal(item);
                   }
                 }}
                 className={cn(
-                  "p-3 rounded-lg flex items-start gap-3 cursor-pointer transition-all hover:bg-muted/60 focus-visible:bg-muted/70 focus-visible:outline-none border border-transparent",
-                  !item.read ? "bg-muted/30 border-border/50 font-normal" : "opacity-75 hover:opacity-100"
+                  "group p-3 rounded-lg flex items-start gap-3 cursor-pointer transition-all hover:bg-muted/70 hover:border-border/70 focus-visible:bg-muted/80 focus-visible:outline-none border border-transparent select-none",
+                  !item.read ? "bg-muted/35 border-border/50 font-normal shadow-2xs" : "opacity-80 hover:opacity-100"
                 )}
               >
                 <div
@@ -240,13 +243,16 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-foreground truncate">
+                    <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                       {item.title}
                     </p>
-                    {getNotificationBadge(item.type)}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {getNotificationBadge(item.type)}
+                      <ChevronRight className="size-3 text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                    </div>
                   </div>
 
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
                     {item.message}
                   </p>
 
@@ -268,16 +274,16 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                     </div>
                   )}
 
-                  <div className="pt-0.5 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-muted-foreground/70">
+                  <div className="pt-0.5 flex items-center justify-between text-[10px]">
+                    <span className="font-mono text-muted-foreground/70">
                       {new Date(item.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
-                    {!item.read && (
-                      <span className="text-[10px] text-primary font-medium">Mark read</span>
-                    )}
+                    <span className="text-muted-foreground group-hover:text-primary font-medium transition-colors">
+                      {!item.read ? "Click to view" : "View details"}
+                    </span>
                   </div>
                 </div>
               </div>

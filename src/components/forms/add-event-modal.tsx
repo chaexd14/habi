@@ -59,6 +59,7 @@ export function AddEventModal({
   initialDayIso,
   onCalendarItemCreated,
   onScheduleItemCreated,
+  onOpenCreateSchedule,
 }: AddEventModalProps) {
   const [mounted, setMounted] = useState(false);
   const [formType, setFormType] = useState<FormType>("calendar_item");
@@ -528,9 +529,20 @@ export function AddEventModal({
           ) : (
             <>
               <div className="space-y-1">
-                <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
-                  Target Schedule <span className="text-destructive">*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="sched_select" className="text-xs font-medium text-foreground">
+                    Target Schedule <span className="text-destructive">*</span>
+                  </label>
+                  {onOpenCreateSchedule && (
+                    <button
+                      type="button"
+                      onClick={onOpenCreateSchedule}
+                      className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                    >
+                      + New Schedule
+                    </button>
+                  )}
+                </div>
                 <Select
                   items={scheduleSelectItems}
                   value={selectedScheduleId}
@@ -543,7 +555,7 @@ export function AddEventModal({
                   disabled={schedules.length === 0}
                 >
                   <SelectTrigger className="h-8 w-full bg-background text-xs font-medium">
-                    <SelectValue placeholder={schedules.length === 0 ? "No schedules available" : "Select schedule"} />
+                    <SelectValue placeholder={schedules.length === 0 ? "No schedules available — create one first" : "Select schedule"} />
                   </SelectTrigger>
                   <SelectContent>
                     {scheduleSelectItems.map((s) => (

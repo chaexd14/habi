@@ -11,6 +11,8 @@ import { evaluateNotifications } from "@/lib/utils/notification-checker";
 import { useProfile } from "@/providers/profile-provider";
 import { useSettings } from "@/providers/settings-provider";
 
+import { NotificationDetailModal } from "@/components/notifications/notification-detail-modal";
+
 const STORAGE_KEY = "habi_notifications_v1";
 const NOTIFIED_KEYS_STORAGE_KEY = "habi_notified_keys_v1";
 
@@ -19,11 +21,16 @@ interface NotificationContextType {
   unreadCount: number;
   permission: NotificationPermission | "unsupported";
   toastNotification: NotificationItem | null;
+  selectedNotification: NotificationItem | null;
   dismissToast: () => void;
   requestPermission: () => Promise<boolean>;
   markAsRead: (id: string) => void;
+  markAsUnread: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
+  deleteNotification: (id: string) => void;
+  openNotificationModal: (item: NotificationItem) => void;
+  closeNotificationModal: () => void;
   refreshNotifications: () => Promise<void>;
 }
 
@@ -32,11 +39,16 @@ const NotificationContext = createContext<NotificationContextType>({
   unreadCount: 0,
   permission: "unsupported",
   toastNotification: null,
+  selectedNotification: null,
   dismissToast: () => {},
   requestPermission: async () => false,
   markAsRead: () => {},
+  markAsUnread: () => {},
   markAllAsRead: () => {},
   clearNotifications: () => {},
+  deleteNotification: () => {},
+  openNotificationModal: () => {},
+  closeNotificationModal: () => {},
   refreshNotifications: async () => {},
 });
 
@@ -58,6 +70,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   });
 
   const [toastNotification, setToastNotification] = useState<NotificationItem | null>(null);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(() => {
     if (typeof window !== "undefined") {
@@ -257,17 +270,64 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       saveNotifications(
         notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
+      setSelectedNotification((prev) =>
+        prev?.id === id ? { ...prev, read: true } : prev
+      );
+    },
+    [notifications, saveNotifications]
+  );
+
+  const markAsUnread = useCallback(
+    (id: string) => {
+      saveNotifications(
+        notifications.map((n) => (n.id === id ? { ...n, read: false } : n))
+      );
+      setSelectedNotification((prev) =>
+        prev?.id === id ? { ...prev, read: false } : prev
+      );
     },
     [notifications, saveNotifications]
   );
 
   const markAllAsRead = useCallback(() => {
     saveNotifications(notifications.map((n) => ({ ...n, read: true })));
+    setSelectedNotification((prev) => (prev ? { ...prev, read: true } : null));
   }, [notifications, saveNotifications]);
 
   const clearNotifications = useCallback(() => {
     saveNotifications([]);
+    setSelectedNotification(null);
+    setToastNotification(null);
   }, [saveNotifications]);
+
+  const deleteNotification = useCallback(
+    (id: string) => {
+      saveNotifications(notifications.filter((n) => n.id !== id));
+      setSelectedNotification((prev) => (prev?.id === id ? null : prev));
+      setToastNotification((prev) => (prev?.id === id ? null : prev));
+    },
+    [notifications, saveNotifications]
+  );
+
+  const openNotificationModal = useCallback(
+    (item: NotificationItem) => {
+      // Mark as read in state & storage
+      saveNotifications(
+        notifications.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+      );
+      // Set active modal item
+      setSelectedNotification({ ...item, read: true });
+      // If currently showing as a toast, dismiss the toast
+      setToastNotification((currentToast) =>
+        currentToast?.id === item.id ? null : currentToast
+      );
+    },
+    [notifications, saveNotifications]
+  );
+
+  const closeNotificationModal = useCallback(() => {
+    setSelectedNotification(null);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -278,15 +338,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         unreadCount,
         permission,
         toastNotification,
+        selectedNotification,
         dismissToast,
         requestPermission,
         markAsRead,
+        markAsUnread,
         markAllAsRead,
         clearNotifications,
+        deleteNotification,
+        openNotificationModal,
+        closeNotificationModal,
         refreshNotifications,
       }}
     >
       {children}
+      <NotificationDetailModal />
     </NotificationContext.Provider>
   );
 }

@@ -300,16 +300,36 @@ export function DashboardCalendar() {
             return;
           }
 
-          if (Array.isArray(sItem.days) && sItem.days.includes(dayCode)) {
+          const itemDays: string[] = Array.isArray(sItem.days)
+            ? sItem.days
+            : typeof sItem.days === "string"
+            ? (() => {
+                try {
+                  const parsed = JSON.parse(sItem.days);
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                  return [];
+                }
+              })()
+            : [];
+
+          const hasDay = itemDays.some(
+            (d) => typeof d === "string" && d.trim().toUpperCase() === dayCode
+          );
+
+          if (hasDay) {
             const sch = scheduleMap.get(sItem.schedule_id);
 
-            // Respect parent schedule start_date and end_date bounds
-            if (sch) {
-              if (sch.start_date && iso < sch.start_date) {
-                return;
-              }
-              if (sch.end_date && iso > sch.end_date) {
-                return;
+            // In "All" calendar view, only filter planned schedules that have an explicit end_date bound
+            if (sourceFilter !== "schedule" && sch) {
+              const isPlanned = Boolean(sch.end_date);
+              if (isPlanned) {
+                if (sch.start_date && iso < sch.start_date) {
+                  return;
+                }
+                if (sch.end_date && iso > sch.end_date) {
+                  return;
+                }
               }
             }
 
